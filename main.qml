@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Shapes
 import "Control"
 import "View"
+import BluetoothManager
 Window {
     id: mainWindow
     width: 540
@@ -27,6 +28,38 @@ Window {
     property double cropFactor: 1.0
     property double diagonal: 43.2666153056/1.0
     color: backGroundColor
+    BluetoothManager
+    {
+        id:bleManager
+        Component.onCompleted:
+        {
+            startScan();
+
+        }
+        onChangedState:
+        {
+            if (bleManager.getState()===2)
+            {
+                console.log("Ready to connect");
+                var device = bleManager.getDeviceList();
+                for (let i =0;i<device.length;i++)
+                {
+                    if (device[i]==="SliderController")
+                    {
+                        console.log("found");
+                        bleManager.startConnect(i);
+                        break;
+                    }
+                }
+            }
+            if (bleManager.getState()===4)
+            {
+                console.log("Connected");
+                bleManager.writeData("Connected");
+            }
+        }
+    }
+
     Item
     {
         id:header

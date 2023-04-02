@@ -1,5 +1,8 @@
 QT += quick
+QT += bluetooth
 SOURCES += \
+        Bean/DeviceInfo.cpp \
+        Manager/BluetoothManager.cpp \
         main.cpp
 
 resources.files = main.qml 
@@ -23,3 +26,7 @@ DISTFILES += \
     Control/CheckBox.qml \
     Control/XYPad.qml \
     View/ManualHorizontal.qml
+
+HEADERS += \
+    Bean/DeviceInfo.h \
+    Manager/BluetoothManager.h

@@ -1,10 +1,9 @@
 QT += quick
 QT += bluetooth
+QT += core
 SOURCES += \
-        Bean/DeviceInfo.cpp \
         Manager/BluetoothManager.cpp \
         main.cpp
-
 resources.files = main.qml 
 resources.files += Control/CheckBox.qml
 resources.files += View/
@@ -25,8 +24,20 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 DISTFILES += \
     Control/CheckBox.qml \
     Control/XYPad.qml \
-    View/ManualHorizontal.qml
+    View/ManualHorizontal.qml \
+    android/AndroidManifest.xml \
+    android/build.gradle \
+    android/gradle.properties \
+    android/gradle/wrapper/gradle-wrapper.jar \
+    android/gradle/wrapper/gradle-wrapper.properties \
+    android/gradlew \
+    android/gradlew.bat \
+    android/res/values/libs.xml
 
 HEADERS += \
-    Bean/DeviceInfo.h \
     Manager/BluetoothManager.h
+
+contains(ANDROID_TARGET_ARCH,arm64-v8a) {
+    ANDROID_PACKAGE_SOURCE_DIR = \
+        $$PWD/android
+}

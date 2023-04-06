@@ -12,11 +12,29 @@ Window {
     property double position: manualHorizontal.position
     property double focal: manualHorizontal.focal
     property double pan: manualHorizontal.pan
+    onPositionChanged:
+    {
+        bleManager.write("x");
+        bleManager.write(mainWindow.position);
+        bleManager.write("\n");
+    }
+    onFocalChanged:
+    {
+        bleManager.write("f");
+        bleManager.write(mainWindow.focal);
+        bleManager.write("\n");
+    }
+    onPanChanged:
+    {
+        bleManager.write("p");
+        bleManager.write(mainWindow.pan);
+        bleManager.write("\n");
+    }
     property color backGroundColor: "#151717"
     property color whiteColor: "#f2f2f2"
     property color darkColor: "#2E4F4F"
     property color mainColor: "#0E8388"
-        property color mainColor2: "#9E4784"
+    property color mainColor2: "#9E4784"
     property color lightColor: "#CBE4DE"
     property color lightBackgroundColor: "#414545"
     property double globalSpacing: height/64
@@ -33,31 +51,10 @@ Window {
         id:bleManager
         Component.onCompleted:
         {
-            startScan();
+            bleManager.findAndConnectSlider();
 
         }
-        onChangedState:
-        {
-            if (bleManager.getState()===2)
-            {
-                console.log("Ready to connect");
-                var device = bleManager.getDeviceList();
-                for (let i =0;i<device.length;i++)
-                {
-                    if (device[i]==="SliderController")
-                    {
-                        console.log("found");
-                        bleManager.startConnect(i);
-                        break;
-                    }
-                }
-            }
-            if (bleManager.getState()===4)
-            {
-                console.log("Connected");
-                bleManager.writeData("Connected");
-            }
-        }
+
     }
 
     Item

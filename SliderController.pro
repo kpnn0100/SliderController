@@ -5,7 +5,7 @@ SOURCES += \
         Manager/BluetoothManager.cpp \
         main.cpp
 resources.files = main.qml 
-resources.files += Control/CheckBox.qml
+resources.files += Control/
 resources.files += View/
 resources.prefix = /$${TARGET}
 RESOURCES += resources

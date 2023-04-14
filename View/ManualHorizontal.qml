@@ -3,16 +3,17 @@ import QtQuick.Shapes
 import "../Control"
 Rectangle
 {
-    property double trackerX:tracker.x/modelRegion.width*xMaximum
-    property double trackerY:(modelRegion.height - tracker.y)/modelRegion.width*xMaximum
-    property double position: xyPad.valueX*xMaximum
-    property double focal: xyPad.valueY*(focalMaximum-focalMinimum)+focalMinimum
+    property double trackerX:xyPad.valueX*xMaximum
+    property double trackerY:xyPad.valueY*modelRegion.height/modelRegion.width*xMaximum
+    property double position: leftPad.valueX*xMaximum
+    property double focal: leftPad.valueY*(focalMaximum-focalMinimum)+focalMinimum
+    property double tilt
     property double pan: isAutoPanning.isChecked?
                              ((trackerX-position)>0?
                                   180-Math.atan(trackerY/(trackerX-position))/Math.PI*180:
                                   Math.atan(trackerY/Math.abs(trackerX-position))/Math.PI*180
                               )
-                           :panSlider.value*panMaximum
+                           :rightPad.valueX*panMaximum
     id: middle
     y: header.height
     width: parent.width
@@ -117,8 +118,8 @@ Rectangle
             id: tracker
             height: globalSpacing*2
             width: height
-            x:parent.width/2
-            y:parent.height/2
+            x:xyPad.valueX*modelRegion.width
+            y:(1-xyPad.valueY)*modelRegion.height
             visible: opacity
             opacity: isAutoPanning.isChecked
             Column
@@ -154,16 +155,6 @@ Rectangle
                 border.color: whiteColor
                 radius: height/2
             }
-            MouseArea
-            {
-                anchors.fill: parent
-                drag.target: parent
-                drag.maximumX: modelRegion.width
-                drag.maximumY: modelRegion.height
-                drag.minimumX:0
-                drag.minimumY:0
-
-            }
             transform: Translate
             {
                 x: -tracker.width/2
@@ -186,8 +177,8 @@ Rectangle
                 Item
                 {
                     id:dummyXYPAD
-                    width:0
-                    height:0
+                    width:parent.width/2
+                    height:parent.height/2
 
                 }
             }
@@ -239,7 +230,7 @@ Rectangle
             height:globalSpacing*1.5
             color:mainColor
             radius: height/8
-            x: xyPad.valueX*slider.width
+            x: leftPad.valueX*slider.width
 
             //grip
             Rectangle
@@ -278,10 +269,11 @@ Rectangle
                         fillColor: lightColor
                         strokeColor: "Transparent"
                         PathAngleArc {
+                            id: mainPathAngleArc
                             centerX: backgroundAngle.width/2; centerY: backgroundAngle.height/2
                             radiusX: backgroundAngle.width/2; radiusY: backgroundAngle.width/2
                             startAngle: -90-sweepAngle/2
-                            sweepAngle: 2*Math.atan(diagonal/(2*(xyPad.valueY*(focalMaximum-focalMinimum)+focalMinimum)))/Math.PI*180
+                            sweepAngle: 2*Math.atan(diagonal/(2*(leftPad.valueY*(focalMaximum-focalMinimum)+focalMinimum)))/Math.PI*180
                             Behavior on sweepAngle {
                                 SmoothedAnimation{
                                     velocity:50
@@ -321,12 +313,7 @@ Rectangle
                             centerX: subBackgroundAngle.width/2; centerY: subBackgroundAngle.height/2
                             radiusX: subBackgroundAngle.width/2; radiusY: subBackgroundAngle.width/2
                             startAngle: -90-sweepAngle/2
-                            sweepAngle: (2*Math.atan(diagonal/(2*(xyPad.valueY*(focalMaximum-focalMinimum)+focalMinimum)))/Math.PI*180)*1.005
-                            Behavior on sweepAngle {
-                                SmoothedAnimation{
-                                    velocity:50
-                                }
-                            }
+                            sweepAngle: mainPathAngleArc.sweepAngle*1.005
                         }
                         PathLine
                         {
@@ -385,104 +372,52 @@ Rectangle
             ]
         }
     }
-    //panSlider
+    //X and zoom
     Rectangle
     {
+        id: leftPadRegion
         height:globalSpacing*8
-        width:globalSpacing*16
+        width:height
         anchors.top: modelRegion.bottom
-        anchors.margins: globalSpacing*2
-        anchors.horizontalCenter: parent.horizontalCenter
-        color: "Transparent"
+        anchors.left: modelRegion.left
+        anchors.topMargin: globalSpacing*2
+        border.color: "white"
+        border.width:globalStroke/2
+        color:"Transparent"
         //get value
-        Item {
-            id: panSlider
-            property double value: dummyPanSlider.width/panSlider.width
-            property color color: whiteColor
-            property double xPressed
-            property double yPressed
-            anchors.fill: parent
+        Text {
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            anchors.rightMargin: font.pixelSize/4
+            text: qsTr("Position")
+            font.pixelSize: globalSpacing
+            color:whiteColor
+            font.bold: true
 
-            Item
-            {
-                id:dummyPanSlider
-                width:globalSpacing*8
-                height:0
-
-            }
-
-            MouseArea
-            {
-                anchors.fill: parent
-                onPressed:
-                {
-                    panSlider.xPressed = mouseX
-                    panSlider.yPressed = mouseY
-                }
-
-                onMouseXChanged:
-                {
-                    dummyPanSlider.width+=(mouseX-panSlider.xPressed)
-                    if (dummyPanSlider.width>panSlider.width)
-                    {
-                        dummyPanSlider.width=panSlider.width
-                    }
-                    if (dummyPanSlider.width<0)
-                    {
-                        dummyPanSlider.width=0
-                    }
-                    panSlider.xPressed = mouseX
-
-                }
-                onMouseYChanged:
-                {
-                    dummyPanSlider.width+=(panSlider.yPressed-mouseY)
-                    if (dummyPanSlider.width>panSlider.width)
-                    {
-                        dummyPanSlider.width=panSlider.width
-                    }
-                    if (dummyPanSlider.width<0)
-                    {
-                        dummyPanSlider.width=0
-                    }
-                    panSlider.yPressed = mouseY
-                }
-            }
         }
-        Item
+        XYPad
         {
-            height: parent.width/2
-            width: parent.width
-            clip:true
-            Rectangle
-            {
-                id: panIndicator
-                color:whiteColor
-                width:globalStroke
-                height:globalSpacing*2
-                anchors.top: parent.top
-                anchors.horizontalCenter: parent.horizontalCenter
-                antialiasing:true
-                transform: Rotation
-                {
-                    origin.x:globalStroke/2
-                    origin.y:globalSpacing*8
-                    angle: -90+pan
-
-
-                }
-            }
-
-            Rectangle
-            {
-                color: "transparent"
-                height: parent.width
-                width: parent.width
-                radius: height/2
-                border.color:lightColor
-                border.width:globalSpacing*2
-                opacity:0.1
-            }
+            id: leftPad
+            anchors.fill: parent
+        }
+    }
+    Rectangle
+    {
+        id: rightPadRegion
+        height:globalSpacing*8
+        width:height
+        anchors.top: modelRegion.bottom
+        anchors.right: modelRegion.right
+        anchors.topMargin: globalSpacing*2
+        border.color: "white"
+        border.width:globalStroke/2
+        color:"Transparent"
+        //get value
+        XYPad
+        {
+            defaultX:0.5
+            id: rightPad
+            anchors.fill: parent
         }
     }
 }

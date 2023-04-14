@@ -49,12 +49,6 @@ Window {
     BluetoothManager
     {
         id:bleManager
-        Component.onCompleted:
-        {
-            bleManager.findAndConnectSlider();
-
-        }
-
     }
 
     Item
@@ -64,27 +58,75 @@ Window {
         anchors.left: parent.left
         width: parent.width
         height: mainWindow.height/16
-        Rectangle
+        Row
         {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.margins: globalSpacing
-            width: parent.width/2
-            height: mainWindow.height/16
-            color: "transparent"
-            radius: height/2
-            Text {
-                id: sliderText
-                text: qsTr("Slider")
-                font.pixelSize: parent.height/2
-                font.bold: true
-                color: whiteColor
+            anchors.fill:parent
+            Rectangle
+            {
+
+                width: parent.width/2
+                height: mainWindow.height/16
+                color: "transparent"
+                radius: height/2
+                Text {
+                    id: sliderText
+                    text: qsTr("Slider")
+                    x:parent.height/2
+                    anchors.verticalCenter: parent.verticalCenter
+                    font.pixelSize: parent.height/2
+                    font.bold: true
+                    color: whiteColor
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Controller")
+                    font.pixelSize: parent.height/2
+                    color: whiteColor
+                    x: sliderText.contentWidth+sliderText.x
+                }
             }
-            Text {
-                text: qsTr("Controller")
-                font.pixelSize: parent.height/2
-                color: whiteColor
-                x: sliderText.contentWidth
+            Item
+            {
+                id:connectRegion
+                width:parent.width-x
+                height: parent.height
+                Rectangle
+                {
+                    id: connectedButtonDummy
+                    anchors.fill: parent
+                    color:whiteColor
+                    opacity: 0
+                    Behavior on opacity
+                    {
+                        SmoothedAnimation {velocity:1}
+                    }
+                }
+                Text {
+                    id: connectStatus
+                    anchors.centerIn: parent
+                    color:whiteColor
+                    font.bold:true
+                    font.pixelSize: mainWindow.globalSpacing
+                    text: qsTr("Connect")
+                }
+                MouseArea
+                {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked:
+                    {
+                        bleManager.findAndConnectSlider();
+                    }
+
+                    onEntered:
+                    {
+                        connectedButtonDummy.opacity=0.2
+                    }
+                    onExited:
+                    {
+                        connectedButtonDummy.opacity=0
+                    }
+                }
             }
         }
     }

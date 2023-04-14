@@ -17,15 +17,24 @@ class BluetoothManager : public QObject
     QBluetoothDeviceDiscoveryAgent *discoveryAgent;
     QBluetoothSocket *socket;
     QByteArray doubleToByteArray(double input);
+    QString mStatus;
 public:
     explicit BluetoothManager(QObject *parent = nullptr);
     ~BluetoothManager();
     Q_INVOKABLE void write(QString message);
     Q_INVOKABLE void write(double value);
     Q_INVOKABLE void findAndConnectSlider();
+    QString status() const;
+    void setStatus(const QString &newStatus);
+
+signals:
+    void statusChanged();
+
 private slots:
 
     void deviceDiscovered(const QBluetoothDeviceInfo &deviceInfo);
     void socketConnected();
+private:
+    Q_PROPERTY(QString status READ status WRITE setStatus NOTIFY statusChanged)
 };
 #endif // BLUETOOTHMANAGER_H

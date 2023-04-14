@@ -5,6 +5,8 @@ BluetoothManager::BluetoothManager(QObject *parent)
     QByteArray test =doubleToByteArray(0.142);
     qDebug()<<test;
     qDebug()<<test.size();
+    setStatus("Connect");
+    socket=nullptr;
 }
 
 BluetoothManager::~BluetoothManager(){
@@ -14,6 +16,7 @@ BluetoothManager::~BluetoothManager(){
 
 void BluetoothManager::write(QString message)
 {
+    if (socket!=nullptr)
     if (socket->isWritable())
     {
         qDebug()<< message<<endl;
@@ -23,6 +26,7 @@ void BluetoothManager::write(QString message)
 
 void BluetoothManager::write(double value)
 {
+        if (socket!=nullptr)
     if (socket->isWritable())
     {
         qDebug()<<"output value" <<value<<endl;
@@ -35,6 +39,7 @@ void BluetoothManager::write(double value)
 
 void BluetoothManager::findAndConnectSlider()
 {
+     setStatus("Connecting");
     QBluetoothDeviceDiscoveryAgent *discoveryAgent = new QBluetoothDeviceDiscoveryAgent(this);
     connect(discoveryAgent, SIGNAL(deviceDiscovered(QBluetoothDeviceInfo)), this, SLOT(deviceDiscovered(QBluetoothDeviceInfo)));
     discoveryAgent->start();
@@ -51,9 +56,23 @@ QByteArray BluetoothManager::doubleToByteArray(double input)
     }
     return output;
 }
+
+QString BluetoothManager::status() const
+{
+    return mStatus;
+}
+
+void BluetoothManager::setStatus(const QString &newStatus)
+{
+    if (mStatus == newStatus)
+        return;
+    mStatus = newStatus;
+    emit statusChanged();
+}
 void BluetoothManager::deviceDiscovered(const QBluetoothDeviceInfo &deviceInfo)
 {
     if (deviceInfo.name() == "SliderController") {
+        setStatus("Found...");
         qDebug()<<"found"<<endl;
         socket = new QBluetoothSocket(QBluetoothServiceInfo::RfcommProtocol, this);
         socket->connectToService(deviceInfo.address(), QBluetoothUuid(QBluetoothUuid::ServiceClassUuid::SerialPort));
@@ -63,6 +82,7 @@ void BluetoothManager::deviceDiscovered(const QBluetoothDeviceInfo &deviceInfo)
 }
 void BluetoothManager::socketConnected()
 {
+    setStatus("Connected");
     qDebug()<<"Connected"<<endl;
     qDebug()<< socket->write("!")<<endl;
 }

@@ -1,17 +1,19 @@
 import QtQuick
 import QtQuick.Shapes
+import QtQuick.Window 2.2
 import "Control"
 import "View"
 import BluetoothManager
 Window {
     id: mainWindow
-    width: 540
-    height: 960
+    width: 360
+    height: 640
     visible: true
     title: qsTr("Hello World")
     property double position: manualHorizontal.position
     property double focal: manualHorizontal.focal
     property double pan: manualHorizontal.pan
+    property double tilt: manualHorizontal.tilt
     onPositionChanged:
     {
         bleManager.write("x");
@@ -40,6 +42,7 @@ Window {
     property double globalSpacing: height/64
     property double globalStroke: globalSpacing/4
     property double xMaximum: 2.0
+    property double tiltMaximum: 30
     property double panMaximum: 180
     property double focalMinimum: 18
     property double focalMaximum: 55
@@ -133,6 +136,9 @@ Window {
     ManualHorizontal
     {
         id: manualHorizontal
+        y: header.height+globalSpacing*2
+        width: parent.width
+        height: parent.height - header.height - footer.height
     }
 
     Rectangle

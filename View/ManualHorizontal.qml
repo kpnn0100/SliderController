@@ -7,7 +7,7 @@ Rectangle
     property double trackerY:xyPad.valueY*modelRegion.height/modelRegion.width*xMaximum
     property double position: leftPad.valueX*xMaximum
     property double focal: leftPad.valueY*(focalMaximum-focalMinimum)+focalMinimum
-    property double tilt
+    property double tilt: rightPad.valueY*tiltMaximum*2 - tiltMaximum
     property double pan: isAutoPanning.isChecked?
                              ((trackerX-position)>0?
                                   180-Math.atan(trackerY/(trackerX-position))/Math.PI*180:
@@ -15,26 +15,28 @@ Rectangle
                               )
                            :rightPad.valueX*panMaximum
     id: middle
-    y: header.height
-    width: parent.width
-    height: parent.height - header.height - footer.height
+
     color: "transparent"
     //Slide Region
     Rectangle
     {
         id: modelRegion
-        anchors.centerIn: parent
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent
+        anchors.margins: globalSpacing
         width:parent.width-globalSpacing*10
-        height: parent.height-globalSpacing*20
+        height: parent.height-leftPadRegion.height-4*globalSpacing
         color: "Transparent"
         border.width: globalStroke/4
         border.color: whiteColor
         //data
         Column
         {
-            y: -implicitHeight-globalSpacing/2
+            y: implicitHeight-globalSpacing/2
             anchors.right: parent.right
+            anchors.margins: globalSpacing/2
             spacing: globalSpacing/4
+            z:4
             CheckBox
             {
                 id: isAutoPanning
@@ -53,6 +55,8 @@ Rectangle
             Column
             {
                 spacing: globalSpacing/4
+                //Indicator
+                //Position
                 Item {
                     height: globalSpacing
                     width:20
@@ -72,6 +76,7 @@ Rectangle
                         }
                     }
                 }
+                //Focal
                 Item {
                     height: globalSpacing
                     width:20
@@ -91,6 +96,7 @@ Rectangle
                         }
                     }
                 }
+                //Pan
                 Item {
                     height: globalSpacing
                     width:20
@@ -104,6 +110,26 @@ Rectangle
                         }
                         Text {
                             text: pan.toFixed(2) + "°"
+                            color:whiteColor
+                            font.pixelSize: globalSpacing
+
+                        }
+                    }
+                }
+                //tilt
+                Item {
+                    height: globalSpacing
+                    width:20
+                    Row
+                    {
+                        Text {
+                            text: qsTr("Tilt Angle: ")
+                            color:whiteColor
+                            font.pixelSize: globalSpacing
+                            font.bold: true
+                        }
+                        Text {
+                            text: tilt.toFixed(2) + "°"
                             color:whiteColor
                             font.pixelSize: globalSpacing
 
@@ -329,7 +355,7 @@ Rectangle
             Rectangle
             {
                 id: lens
-                height:parent.height*xyPad.valueY+parent.height/4
+                height:parent.height*leftPad.valueY+parent.height/4
                 width: parent.width/2
                 anchors.horizontalCenter: parent.horizontalCenter
                 radius: width/8
@@ -377,7 +403,7 @@ Rectangle
     {
         id: leftPadRegion
         height:globalSpacing*8
-        width:height
+        width:modelRegion.width/2-globalSpacing
         anchors.top: modelRegion.bottom
         anchors.left: modelRegion.left
         anchors.topMargin: globalSpacing*2
@@ -405,7 +431,7 @@ Rectangle
     {
         id: rightPadRegion
         height:globalSpacing*8
-        width:height
+        width:modelRegion.width/2-globalSpacing
         anchors.top: modelRegion.bottom
         anchors.right: modelRegion.right
         anchors.topMargin: globalSpacing*2
@@ -416,6 +442,7 @@ Rectangle
         XYPad
         {
             defaultX:0.5
+            defaultY:0.5
             id: rightPad
             anchors.fill: parent
         }

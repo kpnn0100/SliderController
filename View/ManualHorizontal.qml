@@ -1,5 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Shapes
+import QtQuick.Controls
 import "../Control"
 Rectangle
 {
@@ -17,6 +18,62 @@ Rectangle
     id: middle
 
     color: "transparent"
+    Dialog {
+        id: dialog
+        title: "Set tracker's position"
+        width: 300
+        height: 200
+        modal: true
+        anchors.centerIn: parent
+        property real xValue: 0.0
+        property real yValue: 0.0
+        property real zValue: 0.0
+
+        onAccepted: {
+            // Save the values entered by the user
+            dialog.xValue = parseFloat(xInput.text)
+            dialog.yValue = parseFloat(yInput.text)
+            dialog.zValue = parseFloat(zInput.text)
+        }
+
+        contentItem: Column {
+            spacing: 10
+            Row {
+                spacing: 10
+                Label {
+                    text: "X:"
+                }
+                TextField {
+                    id: xInput
+
+                    text: dialog.xValue.toString()
+                }
+            }
+            Row {
+                spacing: 10
+                Label {
+                    text: "Y:"
+                }
+                TextField {
+                    id: yInput
+
+                    text: dialog.yValue.toString()
+                }
+            }
+            Row {
+                spacing: 10
+                Label {
+                    text: "Z:"
+                }
+                TextField {
+                    id: zInput
+
+                    text: dialog.zValue.toString()
+                }
+            }
+        }
+        standardButtons: Dialog.Ok | Dialog.Cancel
+    }
     //Slide Region
     Rectangle
     {
@@ -30,17 +87,28 @@ Rectangle
         border.width: globalStroke/4
         border.color: whiteColor
         //data
+
         Column
         {
-            y: implicitHeight-globalSpacing/2
+            anchors.top: parent.top
             anchors.right: parent.right
             anchors.margins: globalSpacing/2
-            spacing: globalSpacing/4
+            spacing: globalSpacing/2
             z:4
             CheckBox
             {
                 id: isAutoPanning
                 text: "Auto panning"
+            }
+            CheckBox
+            {
+                id: isAutoTilt
+                text: "Auto tilt"
+                visible: opacity
+                opacity: isAutoPanning.isChecked ? 1:0
+                Behavior on opacity {
+                    SmoothedAnimation {velocity: 5}
+                }
             }
         }
         Item
@@ -155,13 +223,13 @@ Rectangle
                 anchors.verticalCenter: parent.verticalCenter
                 Text {
 
-                    text: trackerX.toFixed(2) + "m"
+                    text: "x: " + trackerX.toFixed(2) + "m"
                     font.pixelSize: globalSpacing
                     color:whiteColor
                 }
                 Text {
 
-                    text: trackerY.toFixed(2) + "m"
+                    text: "y: " + trackerY.toFixed(2) + "m"
                     font.pixelSize: globalSpacing
                     color:whiteColor
                 }
@@ -191,52 +259,19 @@ Rectangle
 
 
         //xySlider
-        Item {
+        XYPadLinear {
             id: xyPad
-            property double valueX: dummyXYPAD.width/width
-            property double valueY: dummyXYPAD.height/height
             property color color: whiteColor
             anchors.fill: parent
-            Item
-            {
-                anchors.fill: parent
-                Item
-                {
-                    id:dummyXYPAD
-                    width:parent.width/2
-                    height:parent.height/2
-
-                }
-            }
             MouseArea
             {
                 anchors.fill: parent
-                onMouseXChanged:
+                onDoubleClicked:
                 {
-                    dummyXYPAD.width = mouseX
-                    if (dummyXYPAD.width>xyPad.width)
-                    {
-                        dummyXYPAD.width=xyPad.width
-                    }
-                    if (dummyXYPAD.width<0)
-                    {
-                        dummyXYPAD.width=0
-                    }
-
-                }
-                onMouseYChanged:
-                {
-                    dummyXYPAD.height = xyPad.height-mouseY
-                    if (dummyXYPAD.height>xyPad.height)
-                    {
-                        dummyXYPAD.height=xyPad.height
-                    }
-                    if (dummyXYPAD.height<0)
-                    {
-                        dummyXYPAD.height=0
-                    }
+                    dialog.open()
                 }
             }
+
         }
         //Draw Slider
         Rectangle
@@ -247,6 +282,59 @@ Rectangle
             height:globalStroke
             color:whiteColor
         }
+        //Draw background camera for tilt
+        Item
+        {
+            id: backgroundCamera
+            anchors.centerIn: parent
+            height: parent.width>parent.height? parent.height/2:parent.width/2
+            width:height
+
+            Item
+            {
+                height:parent.height
+                width:height
+                anchors.centerIn: parent
+                transform: Rotation {
+                    origin.x: backgroundCamera.width/2; origin.y: backgroundCamera.height/2; angle: -tilt
+                    Behavior on angle
+                    {
+                        SmoothedAnimation {velocity:200}
+                    }
+                }
+                antialiasing: true
+                opacity: 0.1
+                Rectangle
+                {
+                    width: parent.width/4
+                    height:parent.height/2
+                    anchors.centerIn: parent
+                    color:whiteColor
+                    antialiasing: true
+                    Rectangle
+                    {
+                        anchors.left: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.margins: -globalSpacing/10
+                        height:parent.height/1.5
+                        width:parent.width/3
+                        color: whiteColor
+                        antialiasing: true
+                        Rectangle
+                        {
+                            anchors.left: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.margins: -globalSpacing/10
+                            height:parent.height/1.2
+                            width:parent.width*2
+                            color: whiteColor
+                            antialiasing: true
+                        }
+                    }
+                }
+            }
+        }
+
         //Draw camera
         Rectangle
         {
@@ -389,62 +477,104 @@ Rectangle
                     origin.x:0
                     origin.y:globalSpacing*1.5
                     angle:isAutoPanning.isChecked?(-90+((trackerX-camera.x/xyPad.width*xMaximum)>0?
-                                                        180-Math.atan(trackerY/(trackerX-camera.x/xyPad.width*xMaximum))/Math.PI*180:
-                                                        Math.atan(trackerY/Math.abs(trackerX-camera.x/xyPad.width*xMaximum))/Math.PI*180
-                    )) : -90+pan
+                                                            180-Math.atan(trackerY/(trackerX-camera.x/xyPad.width*xMaximum))/Math.PI*180:
+                                                            Math.atan(trackerY/Math.abs(trackerX-camera.x/xyPad.width*xMaximum))/Math.PI*180
+                                                        )) : -90+pan
 
-
+                    Behavior on angle
+                    {
+                        SmoothedAnimation {velocity:200}
+                    }
                 }
             ]
         }
     }
     //X and zoom
-    Rectangle
-    {
-        id: leftPadRegion
+    Item {
+        id: controlPad
         height:globalSpacing*8
-        width:modelRegion.width/2-globalSpacing
+        width:modelRegion.width
+        anchors.horizontalCenter: modelRegion.horizontalCenter
         anchors.top: modelRegion.bottom
-        anchors.left: modelRegion.left
         anchors.topMargin: globalSpacing*2
-        border.color: "white"
-        border.width:globalStroke/2
-        color:"Transparent"
-        //get value
-        Text {
-            anchors.bottom: parent.bottom
-            anchors.right: parent.right
-            anchors.rightMargin: font.pixelSize/4
-            text: qsTr("Position")
-            font.pixelSize: globalSpacing
-            color:whiteColor
-            font.bold: true
+        Rectangle
+        {
+            id: leftPadRegion
+            height:globalSpacing*8
+            width:parent.width/2-globalSpacing
 
+            anchors.left: parent.left
+            border.color: "white"
+            border.width:globalStroke/2
+            color:"Transparent"
+            //get value
+            Text {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.leftMargin: globalSpacing
+                transform: Rotation { origin.x: 0; origin.y: globalSpacing/2; angle: 90}
+                text: qsTr("Focal")
+                font.pixelSize: globalSpacing
+                color:whiteColor
+                font.bold: true
+
+            }
+            Text {
+                anchors.bottom: parent.bottom
+                anchors.right: parent.right
+                anchors.rightMargin: font.pixelSize/4
+                text: qsTr("Position")
+                font.pixelSize: globalSpacing
+                color:whiteColor
+                font.bold: true
+
+            }
+            XYPad
+            {
+                id: leftPad
+                anchors.fill: parent
+            }
         }
-        XYPad
+        Rectangle
         {
-            id: leftPad
-            anchors.fill: parent
-        }
-    }
-    Rectangle
-    {
-        id: rightPadRegion
-        height:globalSpacing*8
-        width:modelRegion.width/2-globalSpacing
-        anchors.top: modelRegion.bottom
-        anchors.right: modelRegion.right
-        anchors.topMargin: globalSpacing*2
-        border.color: "white"
-        border.width:globalStroke/2
-        color:"Transparent"
-        //get value
-        XYPad
-        {
-            defaultX:0.5
-            defaultY:0.5
-            id: rightPad
-            anchors.fill: parent
+            id: rightPadRegion
+            height:globalSpacing*8
+            width:parent.width/2-globalSpacing
+
+            anchors.right: parent.right
+
+            border.color: "white"
+            border.width:globalStroke/2
+            color:"Transparent"
+            //get value
+            Text {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.leftMargin: globalSpacing
+                transform: Rotation { origin.x: 0; origin.y: globalSpacing/2; angle: 90}
+                text: qsTr("Tilt")
+                font.pixelSize: globalSpacing
+                color:whiteColor
+                font.bold: true
+
+            }
+            Text {
+                anchors.bottom: parent.bottom
+                anchors.right: parent.right
+                anchors.rightMargin: font.pixelSize/4
+                text: qsTr("Pan")
+                font.pixelSize: globalSpacing
+                color:whiteColor
+                font.bold: true
+
+            }
+            XYPad
+            {
+                defaultX:0.5
+                defaultY:0.5
+                id: rightPad
+                anchors.fill: parent
+            }
         }
     }
 }

@@ -24,6 +24,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 DISTFILES += \
     Control/CheckBox.qml \
     Control/XYPad.qml \
+    Control/XYPadLinear.qml \
     View/ManualHorizontal.qml \
     android/AndroidManifest.xml \
     android/build.gradle \

@@ -21,10 +21,16 @@ Item {
     MouseArea
     {
         anchors.fill: parent
+
         onPressed:
         {
             panSlider.xPressed = mouseX
             panSlider.yPressed = mouseY
+        }
+        onDoubleClicked:
+        {
+            dummyPanSlider.width=defaultX*panSlider.width
+            dummyPanSlider.height=defaultY*panSlider.height
         }
 
         onMouseXChanged:

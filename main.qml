@@ -32,6 +32,12 @@ Window {
         bleManager.write(mainWindow.pan);
         bleManager.write("\n");
     }
+    onTiltChanged:
+    {
+        bleManager.write("t");
+        bleManager.write(mainWindow.tilt);
+        bleManager.write("\n");
+    }
     property color backGroundColor: "#151717"
     property color whiteColor: "#f2f2f2"
     property color darkColor: "#2E4F4F"
@@ -133,6 +139,7 @@ Window {
             }
         }
     }
+
     ManualHorizontal
     {
         id: manualHorizontal

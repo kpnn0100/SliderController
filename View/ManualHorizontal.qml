@@ -511,7 +511,7 @@ Rectangle
             ]
             onPressed: (points) =>
                        {
-                           if (points.length===1)
+                           if (!(leftHold || rightHold))
                            {
                                if (point1.x<leftPadRegion.width && point1.y<leftPadRegion.height)
                                {
@@ -537,8 +537,10 @@ Rectangle
                            }
                            else
                            {
+                                console.log("point 2 activated")
                                if (point2.x<leftPadRegion.width && point2.y<leftPadRegion.height)
                                {
+                                   console.log("point 2 is left")
                                    multiTouchPadHandler.leftPoint = Qt.binding(function () { return point2})
                                    multiTouchPadHandler.leftPoint.xChanged.connect(multiTouchPadHandler.leftPointXHandler)
                                    multiTouchPadHandler.leftPoint.yChanged.connect(multiTouchPadHandler.leftPointYHandler)
@@ -551,6 +553,7 @@ Rectangle
                                    && point2.x<(rightPadRegion.x + rightPadRegion.width)
                                    && point2.y<(rightPadRegion.height))
                                {
+                                   console.log("point 2 is right")
                                    multiTouchPadHandler.rightPoint = Qt.binding(function () { return point2})
                                    multiTouchPadHandler.rightPoint.xChanged.connect(multiTouchPadHandler.rightPointXHandler)
                                    multiTouchPadHandler.rightPoint.yChanged.connect(multiTouchPadHandler.rightPointYHandler)
@@ -582,6 +585,21 @@ Rectangle
                         rightHold = 0
                     }
                 }
+                if (!point2.pressed)
+                {
+                    if (leftHold === 2)
+                    {
+                        multiTouchPadHandler.leftPoint.xChanged.disconnect(multiTouchPadHandler.leftPointXHandler)
+                        multiTouchPadHandler.leftPoint.yChanged.disconnect(multiTouchPadHandler.leftPointYHandler)
+                        leftHold = 0
+                    }
+                    if (rightHold === 2)
+                    {
+                        multiTouchPadHandler.rightPoint.xChanged.disconnect(multiTouchPadHandler.rightPointXHandler)
+                        multiTouchPadHandler.rightPoint.yChanged.disconnect(multiTouchPadHandler.rightPointYHandler)
+                        rightHold = 0
+                    }
+                }
             }
             property double oldLeftX
             property double oldLeftY
@@ -589,6 +607,7 @@ Rectangle
             property double oldRightY
             function leftPointXHandler()
             {
+//                console.log("left x "+ leftPoint.x)
                 if (dummyLeftPad.width+(leftPoint.x-oldLeftX)>leftPad.width)
                 {
                     dummyLeftPad.width=leftPad.width
@@ -605,37 +624,51 @@ Rectangle
             }
             function rightPointXHandler()
             {
-                if (dummyLeftPad.width+(leftPoint.x-oldLeftX)>leftPad.width)
+//                                console.log("right x "+ rightPoint.x)
+                if (dummyRightPad.width+(rightPoint.x-oldRightX)>rightPad.width)
                 {
-                    dummyLeftPad.width=leftPad.width
+                    dummyRightPad.width=rightPad.width
                 }
                 else
-                if (dummyLeftPad.width+(leftPoint.x-oldLeftX)<0)
+                if (dummyRightPad.width+(rightPoint.x-oldRightX)<0)
                 {
-                    dummyLeftPad.width=0
+                    dummyRightPad.width=0
                 }
                 else
-                dummyLeftPad.width+=(leftPoint.x-oldLeftX)
-               oldLeftX= leftPoint.x
+                dummyRightPad.width+=(rightPoint.x-oldRightX)
+               oldRightX= rightPoint.x
             }
             function leftPointYHandler()
             {
-                if (dummyLeftPad.height+(leftPoint.y-oldLeftY)>leftPad.height)
+//                                console.log("left y"+ leftPoint.y)
+                if (dummyLeftPad.height+(oldLeftY-leftPoint.y)>leftPad.height)
                 {
                     dummyLeftPad.height=leftPad.height
                 }
                 else
-                if (dummyLeftPad.height+(leftPoint.y-oldLeftY)<0)
+                if (dummyLeftPad.height+(oldLeftY-leftPoint.y)<0)
                 {
                     dummyLeftPad.height=0
                 }
                 else
-                dummyLeftPad.height+=(leftPoint.y-oldLeftY)
+                dummyLeftPad.height+=(oldLeftY-leftPoint.y)
                oldLeftY= leftPoint.y
             }
             function rightPointYHandler()
             {
-                console.log("right y"+ rightPoint.y)
+//                console.log("right y"+ rightPoint.y)
+                if (dummyRightPad.height+(oldRightY-rightPoint.y)>rightPad.height)
+                {
+                    dummyRightPad.height=rightPad.height
+                }
+                else
+                if (dummyRightPad.height+(oldRightY-rightPoint.y)<0)
+                {
+                    dummyRightPad.height=0
+                }
+                else
+                dummyRightPad.height+=(oldRightY-rightPoint.y)
+               oldRightY= rightPoint.y
             }
         }
 
@@ -683,8 +716,8 @@ Rectangle
                 Item
                 {
                     id:dummyLeftPad
-                    width:defaultX*parent.width
-                    height:defaultY*parent.height
+                    width:leftPad.defaultX*parent.width
+                    height:leftPad.defaultY*parent.height
                 }
             }
 
@@ -725,17 +758,17 @@ Rectangle
             Item {
                 id: rightPad
                 anchors.fill: parent
-                property double valueX: dummyLeftPad.width/width
-                property double valueY: dummyLeftPad.height/height
-                property double defaultX:0
+                property double valueX: dummyRightPad.width/width
+                property double valueY: dummyRightPad.height/height
+                property double defaultX:0.5
                 property double defaultY:0
                 property double xPressed
                 property double yPressed
                 Item
                 {
                     id:dummyRightPad
-                    width:defaultX*parent.width
-                    height:defaultY*parent.height
+                    width:rightPad.defaultX*parent.width
+                    height:rightPad.defaultY*parent.height
                 }
             }
         }

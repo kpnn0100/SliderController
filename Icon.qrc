@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/icon">
+        <file>resource/focal.png</file>
+        <file>resource/pan.png</file>
+        <file>resource/pos.png</file>
+        <file>resource/tilt.png</file>
+        <file>resource/add.png</file>
+        <file>resource/save.png</file>
+        <file>resource/delete.png</file>
+        <file>resource/pause.png</file>
+        <file>resource/restart.png</file>
+        <file>resource/start.png</file>
+        <file>resource/send.png</file>
+    </qresource>
+</RCC>

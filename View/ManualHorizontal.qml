@@ -75,6 +75,7 @@ Rectangle
         standardButtons: Dialog.Ok | Dialog.Cancel
     }
     //Slide Region
+
     Rectangle
     {
         id: modelRegion
@@ -83,7 +84,7 @@ Rectangle
         anchors.margins: globalSpacing
         width:parent.width-globalSpacing*10
         height: parent.height-leftPadRegion.height-4*globalSpacing
-        color: "Transparent"
+        color: darkBackGroundColor
         border.width: globalStroke/4
         border.color: whiteColor
         //data
@@ -119,91 +120,65 @@ Rectangle
             x:globalSpacing/2
             y:globalSpacing/4
 
+            ListModel {
+                id: propertyList
+                property real pos: position
+                property real foc: focal
+                property real pa: pan
+                property real ti: tilt
 
-            Column
+                property bool completed: false
+                Component.onCompleted: {
+                    append({"imageSource": "qrc:/icon/resource/pos.png", "prefixText": pos.toFixed(2) + "m"});
+                    append({"imageSource": "qrc:/icon/resource/focal.png", "prefixText": foc.toFixed(2) + "mm"});
+                    append({"imageSource": "qrc:/icon/resource/pan.png", "prefixText": pa.toFixed(2) + "°"});
+                    append({"imageSource": "qrc:/icon/resource/tilt.png", "prefixText": ti.toFixed(2) + "°"});
+                    completed = true;
+                }
+
+                // 2. Update the list model:
+                onPosChanged: {
+                    if(completed) setProperty(0, "prefixText",  pos.toFixed(2) + "m");
+                }
+                onFocChanged: {
+                    if(completed) setProperty(1, "prefixText",  foc.toFixed(2) + "mm");
+                }
+                onPaChanged: {
+                    if(completed) setProperty(2, "prefixText",  pa.toFixed(2) + "°");
+                }
+                onTiChanged: {
+                    if(completed) setProperty(3, "prefixText",  ti.toFixed(2) + "°");
+                }
+            }
+            ListView
             {
-                spacing: globalSpacing/4
                 //Indicator
                 //Position
-                Item {
-                    height: globalSpacing
-                    width:20
-                    Row
-                    {
-                        Text {
-                            text: qsTr("Position: ")
-                            color:whiteColor
-                            font.pixelSize: globalSpacing
-                            font.bold: true
-                        }
-                        Text {
-                            text: position.toFixed(2) + "m"
-                            color:whiteColor
-                            font.pixelSize: globalSpacing
-
-                        }
+                anchors.fill: parent
+                orientation: ListView.Horizontal
+                spacing: globalSpacing*4
+                model: propertyList
+                delegate: Row
+                {
+                    spacing: globalSpacing
+                    height:globalSpacing*4
+                    width: implicitWidth
+                    Image {
+                        source: imageSource
+                        height:parent.height
+                        width:height
+                        fillMode: Image.PreserveAspectFit
+                        sourceSize.height: height*2
+                        sourceSize.width: width*2
+                    }
+                    Text {
+                        text: prefixText
+                        color:whiteColor
+                        font.pixelSize: globalSpacing*2
+                        anchors.verticalCenter: parent.verticalCenter
                     }
                 }
-                //Focal
-                Item {
-                    height: globalSpacing
-                    width:20
-                    Row
-                    {
-                        Text {
-                            text: qsTr("Focal length: ")
-                            color:whiteColor
-                            font.pixelSize: globalSpacing
-                            font.bold: true
-                        }
-                        Text {
-                            text: focal.toFixed(2) + "mm"
-                            color:whiteColor
-                            font.pixelSize: globalSpacing
 
-                        }
-                    }
-                }
-                //Pan
-                Item {
-                    height: globalSpacing
-                    width:20
-                    Row
-                    {
-                        Text {
-                            text: qsTr("Pan Angle: ")
-                            color:whiteColor
-                            font.pixelSize: globalSpacing
-                            font.bold: true
-                        }
-                        Text {
-                            text: pan.toFixed(2) + "°"
-                            color:whiteColor
-                            font.pixelSize: globalSpacing
-
-                        }
-                    }
-                }
-                //tilt
-                Item {
-                    height: globalSpacing
-                    width:20
-                    Row
-                    {
-                        Text {
-                            text: qsTr("Tilt Angle: ")
-                            color:whiteColor
-                            font.pixelSize: globalSpacing
-                            font.bold: true
-                        }
-                        Text {
-                            text: tilt.toFixed(2) + "°"
-                            color:whiteColor
-                            font.pixelSize: globalSpacing
-
-                        }
-                    }
-                }
             }
         }
 
@@ -483,12 +458,14 @@ Rectangle
 
                     Behavior on angle
                     {
+                        enabled: !isAutoPanning
                         SmoothedAnimation {velocity:200}
                     }
                 }
             ]
         }
     }
+
     //X and zoom
     Item {
         id: controlPad
@@ -537,7 +514,7 @@ Rectangle
                            }
                            else
                            {
-                                console.log("point 2 activated")
+                               console.log("point 2 activated")
                                if (point2.x<leftPadRegion.width && point2.y<leftPadRegion.height)
                                {
                                    console.log("point 2 is left")
@@ -607,68 +584,68 @@ Rectangle
             property double oldRightY
             function leftPointXHandler()
             {
-//                console.log("left x "+ leftPoint.x)
+                //                console.log("left x "+ leftPoint.x)
                 if (dummyLeftPad.width+(leftPoint.x-oldLeftX)>leftPad.width)
                 {
                     dummyLeftPad.width=leftPad.width
                 }
                 else
-                if (dummyLeftPad.width+(leftPoint.x-oldLeftX)<0)
-                {
-                    dummyLeftPad.width=0
-                }
-                else
-                dummyLeftPad.width+=(leftPoint.x-oldLeftX)
-               oldLeftX= leftPoint.x
+                    if (dummyLeftPad.width+(leftPoint.x-oldLeftX)<0)
+                    {
+                        dummyLeftPad.width=0
+                    }
+                    else
+                        dummyLeftPad.width+=(leftPoint.x-oldLeftX)
+                oldLeftX= leftPoint.x
 
             }
             function rightPointXHandler()
             {
-//                                console.log("right x "+ rightPoint.x)
+                //                                console.log("right x "+ rightPoint.x)
                 if (dummyRightPad.width+(rightPoint.x-oldRightX)>rightPad.width)
                 {
                     dummyRightPad.width=rightPad.width
                 }
                 else
-                if (dummyRightPad.width+(rightPoint.x-oldRightX)<0)
-                {
-                    dummyRightPad.width=0
-                }
-                else
-                dummyRightPad.width+=(rightPoint.x-oldRightX)
-               oldRightX= rightPoint.x
+                    if (dummyRightPad.width+(rightPoint.x-oldRightX)<0)
+                    {
+                        dummyRightPad.width=0
+                    }
+                    else
+                        dummyRightPad.width+=(rightPoint.x-oldRightX)
+                oldRightX= rightPoint.x
             }
             function leftPointYHandler()
             {
-//                                console.log("left y"+ leftPoint.y)
+                //                                console.log("left y"+ leftPoint.y)
                 if (dummyLeftPad.height+(oldLeftY-leftPoint.y)>leftPad.height)
                 {
                     dummyLeftPad.height=leftPad.height
                 }
                 else
-                if (dummyLeftPad.height+(oldLeftY-leftPoint.y)<0)
-                {
-                    dummyLeftPad.height=0
-                }
-                else
-                dummyLeftPad.height+=(oldLeftY-leftPoint.y)
-               oldLeftY= leftPoint.y
+                    if (dummyLeftPad.height+(oldLeftY-leftPoint.y)<0)
+                    {
+                        dummyLeftPad.height=0
+                    }
+                    else
+                        dummyLeftPad.height+=(oldLeftY-leftPoint.y)
+                oldLeftY= leftPoint.y
             }
             function rightPointYHandler()
             {
-//                console.log("right y"+ rightPoint.y)
+                //                console.log("right y"+ rightPoint.y)
                 if (dummyRightPad.height+(oldRightY-rightPoint.y)>rightPad.height)
                 {
                     dummyRightPad.height=rightPad.height
                 }
                 else
-                if (dummyRightPad.height+(oldRightY-rightPoint.y)<0)
-                {
-                    dummyRightPad.height=0
-                }
-                else
-                dummyRightPad.height+=(oldRightY-rightPoint.y)
-               oldRightY= rightPoint.y
+                    if (dummyRightPad.height+(oldRightY-rightPoint.y)<0)
+                    {
+                        dummyRightPad.height=0
+                    }
+                    else
+                        dummyRightPad.height+=(oldRightY-rightPoint.y)
+                oldRightY= rightPoint.y
             }
         }
 

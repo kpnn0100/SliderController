@@ -4,45 +4,56 @@ import QtQuick.Window 2.2
 import "Control"
 import "View"
 import BluetoothManager
+import QtQuick.Controls
 Window {
     id: mainWindow
-    width: 360
-    height: 640
+//    visibility: Window.FullScreen
+    height:720
+    width:1280
     visible: true
     title: qsTr("Hello World")
-    property double position: manualHorizontal.position
-    property double focal: manualHorizontal.focal
-    property double pan: manualHorizontal.pan
-    property double tilt: manualHorizontal.tilt
+    property double position: bar.currentIndex == 0 ? manualHorizontal.position : autoHorizontal.pos
+    property double focal: bar.currentIndex == 0 ? manualHorizontal.focal : autoHorizontal.focal
+    property double pan: bar.currentIndex == 0 ? manualHorizontal.pan : autoHorizontal.pan
+    property double tilt: bar.currentIndex == 0 ? manualHorizontal.tilt : autoHorizontal.tilt
     onPositionChanged:
     {
         bleManager.write("x");
         bleManager.write(mainWindow.position);
         bleManager.write("\n");
+        console.log("move: x :" + mainWindow.position )
     }
     onFocalChanged:
     {
         bleManager.write("f");
         bleManager.write(mainWindow.focal);
         bleManager.write("\n");
+        console.log("move: focal :" + mainWindow.focal )
     }
     onPanChanged:
     {
         bleManager.write("p");
         bleManager.write(mainWindow.pan);
         bleManager.write("\n");
+        console.log("move: pan :" + mainWindow.pan )
     }
     onTiltChanged:
     {
         bleManager.write("t");
         bleManager.write(mainWindow.tilt);
         bleManager.write("\n");
+        console.log("move: tilt :" + mainWindow.tilt )
     }
     property color backGroundColor: "#151717"
+    property color darkBackGroundColor: "#0a0a0a"
     property color whiteColor: "#f2f2f2"
+
     property color darkColor: "#2E4F4F"
     property color mainColor: "#0E8388"
+    property color mainColorLowContrast: "#82b8ba"
     property color mainColor2: "#9E4784"
+    property color mainColor3: "#a8731e"
+    property color redColor: "#a8251e"
     property color lightColor: "#CBE4DE"
     property color lightBackgroundColor: "#414545"
     property double globalSpacing: height/64
@@ -138,15 +149,102 @@ Window {
                 }
             }
         }
+
+    }
+    Item
+    {
+        y: header.height
+        height:parent.height-header.height
+        width:parent.width
+        Item {
+            id: bar
+            width: parent.width
+            height: globalSpacing*3
+            anchors.top: parent.top
+            property int currentIndex: 1
+            Row
+            {
+                anchors.fill:parent
+                Rectangle
+                {
+                    id:manualButton
+                    width:parent.width/2
+                    height:parent.height
+                    color:bar.currentIndex === 0 ? mainColor : whiteColor
+
+                    Text {
+                        text: qsTr("Manual")
+                        font.pixelSize: globalSpacing*1.5
+                        anchors.centerIn: parent
+                        color:bar.currentIndex === 0 ? whiteColor : mainColorLowContrast
+                        font.bold: true
+                    }
+                    MouseArea
+                    {
+                        anchors.fill: parent
+                        onClicked:
+                        {
+                            bar.currentIndex=0;
+                        }
+                    }
+                }
+
+                Rectangle
+                {
+                    id:autoButton
+                    width:parent.width/2
+                    height:parent.height
+                    color:bar.currentIndex === 1 ? mainColor : whiteColor
+                    Text {
+                        text: qsTr("Automatic")
+                        font.pixelSize: globalSpacing*1.5
+                        anchors.centerIn: parent
+                        color:bar.currentIndex === 1 ? whiteColor : mainColorLowContrast
+                        font.bold: true
+                    }
+                    MouseArea
+                    {
+                        anchors.fill: parent
+                        onClicked:
+                        {
+                            bar.currentIndex=1;
+                        }
+                    }
+                }
+            }
+        }
+        SwipeView {
+            y:bar.height
+            height:parent.height - y
+            width:parent.width
+            currentIndex: bar.currentIndex
+            Component.onCompleted: contentItem.interactive = false
+            Item
+            {
+                ManualHorizontal
+                {
+                    id: manualHorizontal
+                    y: globalSpacing*2
+                    width: parent.width
+                    height: parent.height - footer.height
+
+                }
+            }
+            Item {
+                AutoHorizontal
+                {
+                    id: autoHorizontal
+                    y: header.height+globalSpacing*2
+                    width: parent.width
+                    height: parent.height - header.height - footer.height
+                }
+            }
+            Item {
+                id: activityTab
+            }
+        }
     }
 
-    ManualHorizontal
-    {
-        id: manualHorizontal
-        y: header.height+globalSpacing*2
-        width: parent.width
-        height: parent.height - header.height - footer.height
-    }
 
     Rectangle
     {

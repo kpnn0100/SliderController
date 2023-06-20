@@ -7,9 +7,9 @@ import BluetoothManager
 import QtQuick.Controls
 Window {
     id: mainWindow
-//    visibility: Window.FullScreen
-    height:720
-    width:1280
+    visibility: Window.FullScreen
+//    height:720
+//    width:1280
     visible: true
     title: qsTr("Hello World")
     property double position: bar.currentIndex == 0 ? manualHorizontal.position : autoHorizontal.pos
@@ -127,7 +127,7 @@ Window {
                     color:whiteColor
                     font.bold:true
                     font.pixelSize: mainWindow.globalSpacing
-                    text: qsTr("Connect")
+                    text: bleManager.status
                 }
                 MouseArea
                 {

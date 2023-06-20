@@ -41,6 +41,12 @@ Item {
     signal saveScript()
     signal newScript()
     signal openScript()
+    onPlayScript:
+    {
+        bleManager.write("PLAY\n")
+         mainItem.isPlaying = true
+    }
+
     function saveListModelToJson(listModel, filePath) {
         var variantMapList = [];
         for (var i = 0; i < listModel.count; i++) {
@@ -115,16 +121,77 @@ Item {
     {
         saveFileDialog.open()
     }
+    function bezier(t, p0, p1, p2, p3) {
+      var u = 1 - t;
+      var tt = t * t;
+      var uu = u * u;
+      var uuu = uu * u;
+      var ttt = tt * t;
 
+      var x = uuu * p0.x + 3 * uu * t * p1.x + 3 * u * tt * p2.x + ttt * p3.x;
+      var y = uuu * p0.y + 3 * uu * t * p1.y + 3 * u * tt * p2.y + ttt * p3.y;
+
+      return y;
+    }
+
+
+    function sendProcessor()
+    {
+        let delta = 0.1
+        let posVelocity = []
+        let pos = []
+        posVelocity.push(0.0)
+        for (let i = 1; i < keyframeList.count-1;i++)
+        {
+            let time1 =  keyframeList.get(i-1).time;
+            let time2 =  keyframeList.get(i).time;
+            let pos1 = keyframeList.get(i-1).position;
+            let pos2 = keyframeList.get(i).position;
+            posVelocity.push((pos2-pos1)/(time2-time1));
+        }
+        posVelocity.push(0.0);
+        for (let i = 0; i < keyframeList.count-1;i++)
+        {
+            let percentTable = [];
+            let time1 =  keyframeList.get(i).time;
+            let time2 =  keyframeList.get(i+1).time;
+            let pos1 = keyframeList.get(i).position;
+            let pos2 = keyframeList.get(i+1).position;
+            let outgoing = keyframeList.get(i).outgoing/100;
+            let ingoing = keyframeList.get(i+1).ingoing/100;
+
+            let x1 = time1 + (time2 -  time1)*outgoing;
+            let y1 = pos1 + posVelocity[i]*(time2 -  time1)*outgoing;
+
+            let x2 = time2 - (time2 -  time1)*ingoing;
+            let y2 = pos2-posVelocity[i+1]*(time2 -  time1)*ingoing;
+
+
+            let p0 = { x: time1, y: pos1 };
+            let p1 = { x: x1 , y: y1 };
+            let p2 = { x: x2 , y: y2 };
+            let p3 = { x: time2, y: pos2 };
+
+            for (let j = time1; j<time2;j+=delta)
+            {
+                let result = bezier((j-time1)/time2, p0, p1, p2, p3);
+                pos.push(result)
+            }
+            print(pos);
+        }
+        for (let i = 0; i < pos.length;i++)
+        {
+            bleManager.write(pos[i]);
+        }
+        bleManager.write("\n");
+    }
     onSendScript:
     {
-
+        bleManager.write("s");
+       sendProcessor();
     }
 
-    onPlayScript:
-    {
-        mainItem.isPlaying = true
-    }
+
     onStopScript:
     {
         mainItem.isPlaying = false
@@ -132,6 +199,7 @@ Item {
     onRestartScript:
     {
         keyframeListView.currentIndex = 0;
+
     }
     onOpenScript:
     {

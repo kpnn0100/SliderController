@@ -2,12 +2,20 @@
 #include <AccelStepper.h>
 #include <cstring>
 #include <vector>
-
-double charToDouble(char* charArray) {
-    double result;
-    char* bytePtr = reinterpret_cast<char*>(&result);
-    std::memcpy(bytePtr, charArray, sizeof(double));
-    return result;
+#include "CircularList.h"
+double charToDouble(uint8_t *charArray)
+{
+  double result;
+  uint8_t *bytePtr = reinterpret_cast<uint8_t *>(&result);
+  std::memcpy(bytePtr, charArray, sizeof(double));
+  return result;
+}
+int charToInt(uint8_t *charArray)
+{
+  int result;
+  uint8_t *bytePtr = reinterpret_cast<uint8_t *>(&result);
+  std::memcpy(bytePtr, charArray, sizeof(int));
+  return result;
 }
 /* Check if Bluetooth configurations are enabled in the SDK */
 /* If not, then you have to recompile the SDK */
@@ -18,23 +26,27 @@ BluetoothSerial SerialBT;
 AccelStepper xStepper(1, 0, 15);
 AccelStepper panStepper(1, 14, 27);
 AccelStepper tiltStepper(1, 4, 16);
-//define parameter
+// define parameter
 std::vector<double> pos;
-double pulseToMili = 16/3200;
-double meterToPulse = 3200/16*1000;
-double panToPulse = 3200/360;
-long maxXSpeed = 0.5*meterToPulse;
+double pulseToMili = 16 / 3200;
+double meterToPulse = 3200 / 16 * 1000;
+double panToPulse = 3200 / 360;
+long maxXSpeed = 0.5 * meterToPulse;
 long accelarator = 6400;
 long distanceToSpeed(long current, long target)
 {
-  int delta = target-current;
-  if (delta <maxXSpeed)
+  int delta = target - current;
+  if (delta < maxXSpeed)
     return delta;
   return maxXSpeed;
-  
 }
-void setup() {
-  pinMode(15,OUTPUT);
+uint8_t instruction;
+bool readState;
+int s;
+
+void setup()
+{
+  pinMode(15, OUTPUT);
   Serial.begin(115200);
   SerialBT.begin("SliderController");
   /* If no name is given, default 'ESP32' is applied */
@@ -45,116 +57,114 @@ void setup() {
   xStepper.setAcceleration(accelarator);
   xStepper.setMaxSpeed(maxXSpeed);
   panStepper.setAcceleration(accelarator);
-    panStepper.setMaxSpeed(maxXSpeed);
+  panStepper.setMaxSpeed(maxXSpeed);
   tiltStepper.setAcceleration(accelarator);
-
+  instruction = 0;
+  readState = false;
 }
 
-void loop() {
-
+CircularList<uint8_t> buff;
+void loop()
+{
+  static int count;
+  static uint8_t readBuffer[sizeof(int)];
   if (Serial.available())
   {
     SerialBT.write(Serial.read());
   }
+
   if (SerialBT.available())
   {
-    if (instruction = 0)
-      char instruction = SerialBT.read();
-    
-    switch (instruction)
+    buff.push_back(SerialBT.read());
+    if (instruction == 0)
     {
-      case 'x':
+      Serial.println("new Instruction");
+      instruction = buff.back();
+      Serial.println(instruction);
+      buff.pop_back();
+    }
+
+      switch (instruction)
       {
-        char input[sizeof(double)];
-        int i=0;
-        //should not do this with very low timing signal, reimplement when read
-        while (SerialBT.available())
+      case 115:
+      {
+        if (!readState)
         {
-          char r = SerialBT.read();
-          if (r == '\n')
-            break;
-          input[i] = r;
-          i++;
+          Serial.println("about to receive script");
+
+          s = 0;
+          count = 0;
+          readState = true;
+   
         }
-
-        double value = charToDouble(input);     
-        xStepper.stop();
-        xStepper.moveTo((long) (value*meterToPulse));
-
-        Serial.print("move to: ");
-        Serial.println(xStepper.targetPosition());
-        instruction =0;
-        break;
-      }
-      case 'p':
-      {
-        char input[sizeof(double)];
-        int i=0;
-        //should not do this with very low timing signal, reimplement when read
-        while (SerialBT.available())
+        else
         {
-          char r = SerialBT.read();
-          if (r == '\n')
-            break;
-          input[i] = r;
-          i++;
-        }
-
-        double value = charToDouble(input);     
-        panStepper.stop();
-        panStepper.moveTo((long) (value*panToPulse));
-
-        Serial.print("rotate to: ");
-        Serial.println((long) (value*panToPulse));
-        instruction =0;
-        break;
-      }
-      case 's':
-      {
-        char input[sizeof(double)];
-                 Serial.print("receive data 1");
-        int i=0;
-        //should not do this with very low timing signal, reimplement when read
-        while (SerialBT.available())
-        {
-          char r = SerialBT.read();
-          Serial.print("receive data");
-          if (r == '\n')
+          if (s == 0)
           {
-            instruction =0;
-            break;
-          }
-          
-          if (i ==1)
-          {
-            i=0;
-            pos.push_back(charToDouble(input));
-            Serial.print(pos.back());
-            Serial.print(" ");
+            Serial.println("reading length...");
+            count++;
+            if (count == sizeof(int))
+            {
+              for (int j = 0; j < sizeof(int); j++)
+              {
+                readBuffer[j] = buff[0];
+                buff.pop_front();
+              }
+              s = charToInt(readBuffer);
+              Serial.print("about to receive: ");
+              Serial.print(s);
+              Serial.print(" bytes");
+              count = 0;
+            }
           }
           else
-            i++;
-          input[i] = r;
-        }     
+          {
+            static uint8_t dataBuffer[sizeof(double)];
+            count++;
+            if (count == sizeof(double))
+            {
+              for (int j = 0; j < sizeof(double); j++)
+              {
+                dataBuffer[j] = buff[0];
+                buff.pop_front();
+              }
+              double value = charToDouble(dataBuffer);
+              pos.push_back(value);
+              Serial.print("size of pos :");
+              Serial.println(pos.size());
+              Serial.print(pos.back());
+              Serial.print(" ");
+              Serial.println();
+              if (pos.size() == s)
+              {
+                Serial.println("done reading data");
+                instruction = 0;
+                s = 0;
+                pos.clear();
+              }
+              count = 0;
+            }
+          }
+        }
         break;
       }
-    
+      default:
+      {
+        instruction =0;
+      }
     }
   }
   static const unsigned long REFRESH_INTERVAL = 800; // ms
   static unsigned long lastRefreshTime = 0;
-  
-  if(millis() - lastRefreshTime >= REFRESH_INTERVAL)
+
+  if (millis() - lastRefreshTime >= REFRESH_INTERVAL)
   {
     lastRefreshTime += REFRESH_INTERVAL;
     Serial.print("current pos: ");
-    Serial.println(xStepper.currentPosition()/meterToPulse);
-     Serial.print("current rotate: ");
-    Serial.println(panStepper.currentPosition()/panToPulse);
- 
-
+    Serial.println(xStepper.currentPosition() / meterToPulse);
+    Serial.print("current rotate: ");
+    Serial.println(panStepper.currentPosition() / panToPulse);
   }
-    xStepper.run();
-    panStepper.run();
-
+  xStepper.run();
+  panStepper.run();
 }

@@ -128,8 +128,8 @@ Item {
       var uuu = uu * u;
       var ttt = tt * t;
 
-      var x = uuu * p0.x + 3 * uu * t * p1.x + 3 * u * tt * p2.x + ttt * p3.x;
-      var y = uuu * p0.y + 3 * uu * t * p1.y + 3 * u * tt * p2.y + ttt * p3.y;
+
+      var y = u*u*u * p0.y + 3 * u*u * t * p1.y + 3 * u * t*t * p2.y + t*t*t * p3.y;
 
       return y;
     }
@@ -174,20 +174,21 @@ Item {
 
             for (let j = time1; j<time2;j+=delta)
             {
-                let result = bezier((j-time1)/time2, p0, p1, p2, p3);
+                let result = bezier((j-time1)/(time2-time1), p0, p1, p2, p3);
                 pos.push(result)
             }
-            print(pos);
         }
+        console.log(pos);
+        bleManager.write("s");
+        bleManager.writeInt(parseInt(pos.length));
         for (let i = 0; i < pos.length;i++)
         {
             bleManager.write(pos[i]);
         }
-        bleManager.write("\n");
     }
     onSendScript:
     {
-        bleManager.write("s");
+
        sendProcessor();
     }
 

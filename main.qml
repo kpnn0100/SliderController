@@ -20,28 +20,24 @@ Window {
     {
         bleManager.write("x");
         bleManager.write(mainWindow.position);
-        bleManager.write("\n");
         console.log("move: x :" + mainWindow.position )
     }
     onFocalChanged:
     {
         bleManager.write("f");
         bleManager.write(mainWindow.focal);
-        bleManager.write("\n");
         console.log("move: focal :" + mainWindow.focal )
     }
     onPanChanged:
     {
         bleManager.write("p");
         bleManager.write(mainWindow.pan);
-        bleManager.write("\n");
         console.log("move: pan :" + mainWindow.pan )
     }
     onTiltChanged:
     {
         bleManager.write("t");
         bleManager.write(mainWindow.tilt);
-        bleManager.write("\n");
         console.log("move: tilt :" + mainWindow.tilt )
     }
     property color backGroundColor: "#151717"

@@ -13,27 +13,37 @@ BluetoothManager::~BluetoothManager(){
 
 
 }
-
-void BluetoothManager::write(QString message)
+void BluetoothManager::write(QByteArray message)
 {
     if (socket!=nullptr)
     if (socket->isWritable())
     {
+        qDebug()<< "About to write: "<<endl;
         qDebug()<< message<<endl;
-        qDebug()<< socket->write(message.toUtf8())<<endl;
+        qDebug()<< socket->write(message)<<endl;
     }
+}
+void BluetoothManager::write(QString message)
+{
+
+    qDebug()<< "About to write string: "<<endl;
+    write(message.toUtf8());
+
 }
 
 void BluetoothManager::write(double value)
 {
-        if (socket!=nullptr)
-    if (socket->isWritable())
-    {
-        qDebug()<<"output value" <<value<<endl;
-        qDebug()<< socket->write(doubleToByteArray(value))<<endl;
-    }
+            qDebug()<< "About to write double: "<<endl;
+    write(doubleToByteArray(value));
+
 }
 
+void BluetoothManager::writeInt(int value)
+{
+        qDebug()<< "About to write int: "<<endl;
+    write(intToByteArray(value));
+
+}
 
 
 
@@ -57,6 +67,17 @@ QByteArray BluetoothManager::doubleToByteArray(double input)
     return output;
 }
 
+QByteArray BluetoothManager::intToByteArray(int input)
+{
+    QByteArray output; // Character array to store the converted bytes
+
+    char* bytePtr = (char*)(&input); // Get a pointer to the first byte of the double value
+
+    for (int i = 0; i < sizeof(input); i++) {
+        output.append( char(*(bytePtr + i))); // Copy each byte of the double value to the character array
+    }
+    return output;
+}
 QString BluetoothManager::status() const
 {
     return mStatus;

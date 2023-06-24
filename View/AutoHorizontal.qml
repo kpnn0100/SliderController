@@ -137,54 +137,17 @@ Item {
 
     function sendProcessor()
     {
-        let delta = 0.1
-        let posVelocity = []
-        let pos = []
-        posVelocity.push(0.0)
-        for (let i = 1; i < keyframeList.count-1;i++)
+        if (keyframeList.count === 0)
+            return;
+        bleManager.write ("s");
+        bleManager.writeInt(keyframeList.count);
+        for (let i = 0; i < keyframeList.count;i++)
         {
-            let time1 =  keyframeList.get(i-1).time;
-            let time2 =  keyframeList.get(i).time;
-            let pos1 = keyframeList.get(i-1).position;
-            let pos2 = keyframeList.get(i).position;
-            posVelocity.push((pos2-pos1)/(time2-time1));
-        }
-        posVelocity.push(0.0);
-        for (let i = 0; i < keyframeList.count-1;i++)
-        {
-            let percentTable = [];
-            let time1 =  keyframeList.get(i).time;
-            let time2 =  keyframeList.get(i+1).time;
-            let pos1 = keyframeList.get(i).position;
-            let pos2 = keyframeList.get(i+1).position;
-            let outgoing = keyframeList.get(i).outgoing/100;
-            let ingoing = keyframeList.get(i+1).ingoing/100;
-
-            let x1 = time1 + (time2 -  time1)*outgoing;
-            let y1 = pos1 + posVelocity[i]*(time2 -  time1)*outgoing;
-
-            let x2 = time2 - (time2 -  time1)*ingoing;
-            let y2 = pos2-posVelocity[i+1]*(time2 -  time1)*ingoing;
-
-
-            let p0 = { x: time1, y: pos1 };
-            let p1 = { x: x1 , y: y1 };
-            let p2 = { x: x2 , y: y2 };
-            let p3 = { x: time2, y: pos2 };
-
-            for (let j = time1; j<time2;j+=delta)
+            for (let role in keyframeList.get(i))
             {
-                let result = bezier((j-time1)/(time2-time1), p0, p1, p2, p3);
-                pos.push(result)
+             bleManager.write( keyframeList.get(i)[role]);
+
             }
-        }
-        console.log(pos);
-        bleManager.write("s");
-        bleManager.writeInt(parseInt(pos.length));
-        for (let i = 0; i < pos.length;i++)
-        {
-            console.log("write index " + i);
-            bleManager.write(pos[i]);
         }
     }
 

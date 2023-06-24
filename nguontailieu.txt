@@ -1,1 +1,1 @@
-Đường cong Bézier: 
+Đường cong Bézier: https://www.tutorialspoint.com/computer_graphics/computer_graphics_curves.htm

@@ -43,7 +43,7 @@ Item {
     signal openScript()
     onPlayScript:
     {
-        bleManager.write("PLAY\n")
+        bleManager.write("i");
          mainItem.isPlaying = true
     }
 
@@ -183,9 +183,11 @@ Item {
         bleManager.writeInt(parseInt(pos.length));
         for (let i = 0; i < pos.length;i++)
         {
+            console.log("write index " + i);
             bleManager.write(pos[i]);
         }
     }
+
     onSendScript:
     {
 

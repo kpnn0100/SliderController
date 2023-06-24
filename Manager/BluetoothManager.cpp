@@ -15,6 +15,7 @@ BluetoothManager::~BluetoothManager(){
 }
 void BluetoothManager::write(QByteArray message)
 {
+    syncCall.lock();
     if (socket!=nullptr)
     if (socket->isWritable())
     {
@@ -22,6 +23,7 @@ void BluetoothManager::write(QByteArray message)
         qDebug()<< message<<endl;
         qDebug()<< socket->write(message)<<endl;
     }
+    syncCall.unlock();
 }
 void BluetoothManager::write(QString message)
 {

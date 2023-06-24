@@ -8,7 +8,7 @@
 #include <qregularexpression.h>
 #include <QBluetoothDeviceDiscoveryAgent>
 #include <QBluetoothSocket>
-
+#include <QMutex>
 #include <QByteArray>
 using namespace Qt;
 class BluetoothManager : public QObject
@@ -19,6 +19,7 @@ class BluetoothManager : public QObject
     QByteArray doubleToByteArray(double input);
     QByteArray intToByteArray(int input);
     QString mStatus;
+    QMutex syncCall;
 public:
     explicit BluetoothManager(QObject *parent = nullptr);
     ~BluetoothManager();

@@ -49,7 +49,7 @@ void BluetoothManager::writeInt(int value)
 
 void BluetoothManager::findAndConnectSlider()
 {
-     setStatus("Connecting");
+    setStatus("Connecting");
     QBluetoothDeviceDiscoveryAgent *discoveryAgent = new QBluetoothDeviceDiscoveryAgent(this);
     connect(discoveryAgent, SIGNAL(deviceDiscovered(QBluetoothDeviceInfo)), this, SLOT(deviceDiscovered(QBluetoothDeviceInfo)));
     discoveryAgent->start();

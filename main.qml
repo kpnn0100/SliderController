@@ -24,14 +24,14 @@ Window {
         bleManager.unlockCall();
         console.log("move: x :" + mainWindow.position )
     }
-    onFocalChanged:
-    {
-        bleManager.blockCall()
-        bleManager.write("f");
-        bleManager.write(mainWindow.focal);
-        bleManager.unlockCall();
-        console.log("move: focal :" + mainWindow.focal )
-    }
+//    onFocalChanged:
+//    {
+//        bleManager.blockCall()
+//        bleManager.write("f");
+//        bleManager.write(mainWindow.focal);
+//        bleManager.unlockCall();
+//        console.log("move: focal :" + mainWindow.focal )
+//    }
     onPanChanged:
     {
         bleManager.blockCall()

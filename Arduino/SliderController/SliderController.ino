@@ -31,6 +31,9 @@ AccelStepper tiltStepper(1, 4, 16);
 std::vector<Keyframe> keyframeList;
 std::vector<double> posList;
 double meterToPulse = 1000/40 * 1600;
+double panDegreeToPulse = 1600*9;
+double tiltDegreeToPulse = 1600*3;
+
 double panToPulse = 3200 / 360;
 long maxXSpeed = 0.5 * meterToPulse;
 long accelarator = 25600;
@@ -178,7 +181,6 @@ void setup()
     tiltStepper.setAcceleration(accelarator);
     instruction = 0;
     readState = false;
-    xStepper.setRunWithoutStop(false);
 }
 
 CircularList<uint8_t> buff;
@@ -209,6 +211,7 @@ void loop()
 
         switch (instruction)
         {
+            //x  position
         case 120:
         {
           static bool readStateOfX= false;
@@ -237,6 +240,9 @@ void loop()
                     double value = charToDouble(dataBuffer);
                     Serial.print(value);
                     Serial.print(" ");
+                    xStepper.stop();
+                    xStepper.moveTo((long)(value*meterToPulse));
+                    xStepper.setMaxSpeed(xStepper.currentPosition()-(long)(value*meterToPulse));
                     count = 0;
                     readStateOfX = false;
                     instruction = 0;
@@ -246,6 +252,88 @@ void loop()
             }
             break;
         }
+                    //p  pan
+        case 112:
+        {
+          static bool readStateOfPan= false;
+          if (!readStateOfPan)
+            {
+                Serial.println("about to receive x");
+                count = 0;
+                readStateOfPan = true;
+            }
+            else
+            {
+
+                static uint8_t dataBuffer[sizeof(double)];
+                count++;
+                if (count == sizeof(double))
+                {
+                    for (int j = 0; j < sizeof(double); j++)
+                    {
+                        dataBuffer[j] = buff[0];
+                        Serial.print("buffer ");
+                        Serial.print(j);
+                        Serial.print(" ");
+                        Serial.println(dataBuffer[j]);
+                        buff.pop_front();
+                    }
+                    double value = charToDouble(dataBuffer);
+                    Serial.print(value);
+                    Serial.print(" ");
+                    panStepper.stop();
+                    panStepper.moveTo((long)(value*panDegreeToPulse));
+                    panStepper.setMaxSpeed(panStepper.currentPosition()-(long)(value*panDegreeToPulse));
+                    count = 0;
+                    readStateOfPan = false;
+                    instruction = 0;
+                }
+
+                
+            }
+            break;
+        }
+        case 116:
+        {
+          static bool readStateOfTilt= false;
+          if (!readStateOfTilt)
+            {
+                Serial.println("about to receive x");
+                count = 0;
+                readStateOfTilt = true;
+            }
+            else
+            {
+
+                static uint8_t dataBuffer[sizeof(double)];
+                count++;
+                if (count == sizeof(double))
+                {
+                    for (int j = 0; j < sizeof(double); j++)
+                    {
+                        dataBuffer[j] = buff[0];
+                        Serial.print("buffer ");
+                        Serial.print(j);
+                        Serial.print(" ");
+                        Serial.println(dataBuffer[j]);
+                        buff.pop_front();
+                    }
+                    double value = charToDouble(dataBuffer);
+                    Serial.print(value);
+                    Serial.print(" ");
+                    tiltStepper.stop();
+                    tiltStepper.moveTo((long)(value*tiltDegreeToPulse));
+                    tiltStepper.setMaxSpeed(tiltStepper.currentPosition()-(long)(value*tiltDegreeToPulse));
+                    count = 0;
+                    readStateOfTilt = false;
+                    instruction = 0;
+                }
+
+                
+            }
+            break;
+        }
+        //s send script
         case 115:
         {
             if (!readState)
@@ -317,8 +405,13 @@ void loop()
             }
             break;
         }
+        //i  start script
         case 105:
         {
+            if (xStepper.isRunning() || panStepper.isRunning())
+            {
+                break;
+            }
             if (keyframeList.size() < 2)
             {
                 instruction = 0;
@@ -356,7 +449,6 @@ void loop()
             index++;
             if (index == posList.size())
             {
-                xStepper.setRunWithoutStop(false);
                 percentIncrease=1;
                 xStepper.moveTo((long)((keyframeList[0].position) * meterToPulse));
                 xStepper.setMaxSpeed(accelarator);
@@ -435,10 +527,15 @@ void loop()
     if (script_start)
     {
     xStepper.runSpeed();
+    panStepper.runSpeed();
+    tiltStepper.runSpeed();
+
     }
     else
     {
       xStepper.run();
+          panStepper.run();
+          tiltStepper.run();
     }
-    panStepper.run();
+
 }

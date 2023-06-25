@@ -8,8 +8,8 @@ import QtQuick.Controls
 Window {
     id: mainWindow
     visibility: Window.FullScreen
-//    height:720
-//    width:1280
+    //    height:720
+    //    width:1280
     visible: true
     title: qsTr("Hello World")
     property double position: bar.currentIndex == 0 ? manualHorizontal.position : autoHorizontal.pos
@@ -18,26 +18,34 @@ Window {
     property double tilt: bar.currentIndex == 0 ? manualHorizontal.tilt : autoHorizontal.tilt
     onPositionChanged:
     {
+        bleManager.blockCall()
         bleManager.write("x");
         bleManager.write(mainWindow.position);
+        bleManager.unlockCall();
         console.log("move: x :" + mainWindow.position )
     }
     onFocalChanged:
     {
+        bleManager.blockCall()
         bleManager.write("f");
         bleManager.write(mainWindow.focal);
+        bleManager.unlockCall();
         console.log("move: focal :" + mainWindow.focal )
     }
     onPanChanged:
     {
+        bleManager.blockCall()
         bleManager.write("p");
         bleManager.write(mainWindow.pan);
+        bleManager.unlockCall();
         console.log("move: pan :" + mainWindow.pan )
     }
     onTiltChanged:
     {
+        bleManager.blockCall()
         bleManager.write("t");
         bleManager.write(mainWindow.tilt);
+        bleManager.unlockCall();
         console.log("move: tilt :" + mainWindow.tilt )
     }
     property color backGroundColor: "#151717"

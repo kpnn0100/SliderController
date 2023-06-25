@@ -42,18 +42,55 @@ unsigned long lastRunRefreshTime = 0;
 uint8_t instruction;
 bool readState;
 int s;
-double bezier(double t,double p0,double p1,double p2,double p3) {
-    double u = 1 - t;
-    double tt = t * t;
-    double uu = u * u;
-    double uuu = uu * u;
-    double ttt = tt * t;
 
+Point cubic_bezier(Point p0, Point p1, Point p2, Point p3, double t) {
+    // Calculate blending functions
+    double t2 = t * t;
+    double t3 = t2 * t;
+    double mt = 1 - t;
+    double mt2 = mt * mt;
+    double mt3 = mt2 * mt;
 
-    double y = uuu * p0 + 3 * uu * t * p1 + 3 * u * tt * p2 + ttt * p3;
+    // Calculate interpolated point
+    double x = mt3 * p0.x + 3 * mt2 * t * p1.x + 3 * mt * t2 * p2.x + t3 * p3.x;
+    double y = mt3 * p0.y + 3 * mt2 * t * p1.y + 3 * mt * t2 * p2.y + t3 * p3.y;
 
-    return y;
+    Point result = {x, y};
+    return result;
 }
+double findTfromX(Point p0, Point p1, Point p2, Point p3, double x) {
+    double delta = p3.x - p0.x;
+    double lowX = 0;
+    double highX = 1;
+    double indexOfX = x;
+
+    if (x > 0.9) {
+        indexOfX = 1;
+    }
+
+    double dataToSearch = cubic_bezier(p0, p1, p2, p3, indexOfX).x;
+    double xNeedEqual = (dataToSearch - p0.x) / delta;
+
+    while (std::abs(x - xNeedEqual) > 0.002) {
+        if (x > xNeedEqual) {
+            lowX = indexOfX;
+            indexOfX = (indexOfX + highX) / 2;
+        } else {
+            highX = indexOfX;
+            indexOfX = (indexOfX + lowX) / 2;
+        }
+
+        dataToSearch = cubic_bezier(p0, p1, p2, p3, indexOfX).x;
+        xNeedEqual = (dataToSearch - p0.x) / delta;
+    }
+
+    return indexOfX;
+}
+
+double bezierYfromTime(Point p0, Point p1, Point p2, Point p3, double t) {
+    return cubic_bezier(p0, p1, p2, p3, findTfromX(p0, p1, p2, p3, t)).y;
+}
+
 void keyframeToStep()
 {
         std::vector<double> posVelocity;
@@ -82,21 +119,43 @@ void keyframeToStep()
             double ingoing = keyframeList.at(i+1).ingoing/100;
 
             double x1 = time1 + (time2 -  time1)*outgoing;
-            double y1 = pos1 + posVelocity[i]*(time2 -  time1)*outgoing;
+            double y1 = pos1 - posVelocity[i]*(time2 -  time1)*outgoing;
 
             double x2 = time2 - (time2 -  time1)*ingoing;
-            double y2 = pos2-posVelocity[i+1]*(time2 -  time1)*ingoing;
+            double y2 = pos2 + posVelocity[i+1]*(time2 -  time1)*ingoing;
+            Serial.print("point ");
+            Point p[4];
+            p[0].x = time1;
+            p[0].y = pos1;
 
-            double p0 = pos1;
-            double p1 =  y1 ;
-            double p2 = y2 ;
-            double p3 = pos2;
+            p[1].x = x1;
+            p[1].y = y1;
+
+            p[2].x = x2;
+            p[2].y = y2;
+            
+            p[3].x = time2;
+            p[3].y = pos2;
+
+            for (int k = 0;k<4;k++)
+            {
+               Serial.print("point ");
+               Serial.print(k);
+               Serial.print(" x: ");
+               Serial.println(p[k].x);
+               Serial.print("point ");
+               Serial.print(k);
+               Serial.print(" y: ");
+               Serial.println(p[k].y);
+            }
+            
+                                                
             Serial.println("dividing");
             for (double j = time1; j<time2;j+=dt)
             {
 
-                double result = bezier((j-time1)/(time2-time1), p0, p1, p2, p3);
-                Serial.println(result);
+                double result = bezierYfromTime(p[0], p[1], p[2], p[3],(j-time1)/(time2-time1));
+                Serial.println(result,8);
                 posList.push_back(result);
             }
         }
@@ -129,7 +188,7 @@ void loop()
     static Keyframe currentKeyframe;
     static int propertyIndex = 0;
     static int index = 0;
-    static int count;
+    static int count=0;
     static uint8_t readBuffer[sizeof(int)];
 
     if (Serial.available())
@@ -150,30 +209,43 @@ void loop()
 
         switch (instruction)
         {
-//        case 120:
-//        {
-//          static uint8_t dataBuffer[sizeof(double)];
-//          count++;
-//          if (count == sizeof(double))
-//          {
-//              for (int j = 0; j < sizeof(double); j++)
-//              {
-//                  dataBuffer[j] = buff[0];
-//                  buff.pop_front();
-//                  instruction = 0;
-//              }
-//              double value = charToDouble(dataBuffer);
-//              xStepper.stop();
-//              xStepper.moveTo((long)(value * meterToPulse));
-//              xStepper.setMaxSpeed(0.2*meterToPulse);
-//              Serial.print(value);
-//              Serial.print(" ");
-//               Serial.print("size of buff: ");
-//               Serial.println(buff.size());
-//              count = 0;
-//          }
-//          break;
-//        }
+        case 120:
+        {
+          static bool readStateOfX= false;
+          if (!readStateOfX)
+            {
+                Serial.println("about to receive x");
+                count = 0;
+                readStateOfX = true;
+            }
+            else
+            {
+
+                static uint8_t dataBuffer[sizeof(double)];
+                count++;
+                if (count == sizeof(double))
+                {
+                    for (int j = 0; j < sizeof(double); j++)
+                    {
+                        dataBuffer[j] = buff[0];
+                        Serial.print("buffer ");
+                        Serial.print(j);
+                        Serial.print(" ");
+                        Serial.println(dataBuffer[j]);
+                        buff.pop_front();
+                    }
+                    double value = charToDouble(dataBuffer);
+                    Serial.print(value);
+                    Serial.print(" ");
+                    count = 0;
+                    readStateOfX = false;
+                    instruction = 0;
+                }
+
+                
+            }
+            break;
+        }
         case 115:
         {
             if (!readState)
@@ -184,6 +256,7 @@ void loop()
                 count = 0;
                 readState = true;
                 keyframeList.clear();
+                posList.clear();
             }
             else
             {
@@ -236,6 +309,7 @@ void loop()
                         Serial.println("done reading data");
                         xStepper.moveTo((long)((keyframeList[0].position) * meterToPulse));
                         keyframeToStep();
+                        readState = false;
                         instruction = 0;
                         s = 0;
                     }
@@ -255,7 +329,6 @@ void loop()
                 script_start = true;
                 
                 Serial.println("start");
-                xStepper.setRunWithoutStop(true);
                 instruction = 0;
             }
             break;
@@ -270,17 +343,14 @@ void loop()
 
 
 
-    if (millis() - lastRefreshTime >= REFRESH_INTERVAL)
-    {
-        lastRefreshTime += REFRESH_INTERVAL;
-
-    }
         static double percentIncrease = 1.0;
-        static double const DIFF = 0.2 / meterToPulse;
-
+        static double const DIFF = 1 / meterToPulse;
+        
         if (millis() - lastRunRefreshTime >= RUN_REFRESH_INTERVAL)
         {
             lastRunRefreshTime += RUN_REFRESH_INTERVAL;
+//                            Serial.print("current pos: ");
+//           Serial.println((double)xStepper.currentPosition() / meterToPulse, 8 );
                 if (script_start)
         {
             index++;
@@ -332,25 +402,13 @@ void loop()
                 static long oldSpeedNeeded = 0;
                 long distanceToNext = (posList[index]* meterToPulse - xStepper.currentPosition()) ;
                 long movingDirection = (posList[index] - posList[index-1])* meterToPulse;
-                long speedNeeded;
-
-                if (distanceToNext*movingDirection > 0)
-                {
-                   speedNeeded = abs( (long)(((double)distanceToNext) / dt));
-                }
-                else
-                {
-                  speedNeeded = 1;
-                }
+                long speedNeeded = (long)(((double)distanceToNext) / dt);
 
 
                 speedNeeded *= percentIncrease;
-                speedNeeded = abs(speedNeeded);
-
-                xStepper.stop();
-                xStepper.moveTo((long)((posList[index]) * meterToPulse));
-                xStepper.setMaxSpeed(speedNeeded);
-                xStepper.setAcceleration(abs((long)(((double)(speedNeeded-oldSpeedNeeded))/dt)));
+                xStepper.setSpeed(speedNeeded);
+//                xStepper.setMaxSpeed(speedNeeded);
+//                xStepper.setAcceleration(abs((long)(((double)(speedNeeded-oldSpeedNeeded))/dt)));
                 oldSpeedNeeded = speedNeeded;
 //                Serial.print("distanceToNext ");
 //                 Serial.println(distanceToNext);
@@ -367,13 +425,20 @@ void loop()
 //                
                 Serial.print("current pos: ");
                 Serial.println((double)xStepper.currentPosition() / meterToPulse, 8 );
-                Serial.print("moving to: ");
-                Serial.println((posList[index]), 8);
-                Serial.print("current speed: ");
-                Serial.println(xStepper.speed());
+//                Serial.print("moving to: ");
+//                Serial.println((posList[index]), 8);
+//                Serial.print("current speed: ");
+//                Serial.println(xStepper.speed());
             }
         }
     }
-    xStepper.run();
+    if (script_start)
+    {
+    xStepper.runSpeed();
+    }
+    else
+    {
+      xStepper.run();
+    }
     panStepper.run();
 }

@@ -28,6 +28,10 @@ public:
     Q_INVOKABLE void writeInt(int value);
     Q_INVOKABLE void write(QByteArray value);
     Q_INVOKABLE void findAndConnectSlider();
+    Q_INVOKABLE QByteArray byteArrayFromString(QString data);
+    Q_INVOKABLE QByteArray byteArrayFromDouble(double data);
+    Q_INVOKABLE void blockCall();
+    Q_INVOKABLE void unlockCall();
     QString status() const;
     void setStatus(const QString &newStatus);
 

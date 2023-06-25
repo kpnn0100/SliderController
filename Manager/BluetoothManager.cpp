@@ -15,7 +15,6 @@ BluetoothManager::~BluetoothManager(){
 }
 void BluetoothManager::write(QByteArray message)
 {
-    syncCall.lock();
     if (socket!=nullptr)
     if (socket->isWritable())
     {
@@ -23,7 +22,6 @@ void BluetoothManager::write(QByteArray message)
         qDebug()<< message<<endl;
         qDebug()<< socket->write(message)<<endl;
     }
-    syncCall.unlock();
 }
 void BluetoothManager::write(QString message)
 {
@@ -55,6 +53,26 @@ void BluetoothManager::findAndConnectSlider()
     QBluetoothDeviceDiscoveryAgent *discoveryAgent = new QBluetoothDeviceDiscoveryAgent(this);
     connect(discoveryAgent, SIGNAL(deviceDiscovered(QBluetoothDeviceInfo)), this, SLOT(deviceDiscovered(QBluetoothDeviceInfo)));
     discoveryAgent->start();
+}
+
+QByteArray BluetoothManager::byteArrayFromString(QString data)
+{
+    return data.toUtf8();
+}
+
+QByteArray BluetoothManager::byteArrayFromDouble(double data)
+{
+    return doubleToByteArray(data);
+}
+
+void BluetoothManager::blockCall()
+{
+    syncCall.lock();
+}
+
+void BluetoothManager::unlockCall()
+{
+    syncCall.unlock();
 }
 
 QByteArray BluetoothManager::doubleToByteArray(double input)

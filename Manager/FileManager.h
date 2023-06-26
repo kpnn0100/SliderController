@@ -17,6 +17,7 @@ class FileManager : public QObject
     Q_OBJECT
 public:
     explicit FileManager(QObject *parent = nullptr);
+    ~FileManager();
     QList<QVariantMap> dataToBeProcess() const;
     void setDataToBeProcess(const QList<QVariantMap> &newDataToBeProcess);
     Q_INVOKABLE void saveFile(const QList<QVariantMap> &data, const QString &fileUrl);

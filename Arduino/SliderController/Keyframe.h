@@ -3,35 +3,33 @@ class Keyframe
 {
 public:
     double time;
-    double position;
-    double focal;
-    double pan;
-    double tilt;
+    //position pan tilt focal
+    double value[4];
     double ingoing;
     double outgoing;
     Keyframe();
-    Keyframe(double newTime, double newPosition, double newFocal
-    , double newPan, double newTilt, double newIngoing, double newOutgoing);
+    Keyframe(double newTime, double newPosition
+    , double newPan, double newTilt, double newFocal, double newIngoing, double newOutgoing);
     ~Keyframe();
 };
 Keyframe::Keyframe()
 {
     time = 0;
-    position = 0;
-    focal = 0;
-    pan = 0;
-    tilt = 0;
+    value[0] = 0;
+    value[1] = 0;
+    value[2] = 0;
+    value[3] = 0;
     ingoing = 0;
     outgoing = 0;
 }
-Keyframe::Keyframe(double newTime, double newPosition, double newFocal
-    , double newPan, double newTilt, double newIngoing, double newOutgoing)
+Keyframe::Keyframe(double newTime, double newPosition, double newPan 
+    , double newTilt , double  newFocal, double newIngoing, double newOutgoing)
 {
     time = newTime;
-    position = newPosition;
-    focal = newFocal;
-    pan = newPan;
-    tilt = newTilt;
+    value[0]  = newPosition;
+    value[1]  = newPan;
+    value[2]  = newTilt;
+    value[3]  = newFocal;
     ingoing = newIngoing;
     outgoing = newOutgoing;
 }

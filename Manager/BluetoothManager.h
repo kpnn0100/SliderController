@@ -10,6 +10,7 @@
 #include <QBluetoothSocket>
 #include <QMutex>
 #include <QByteArray>
+#include <QThread>
 using namespace Qt;
 class BluetoothManager : public QObject
 {

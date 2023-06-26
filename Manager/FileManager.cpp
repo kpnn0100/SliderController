@@ -6,6 +6,11 @@ FileManager::FileManager(QObject *parent)
 
 }
 
+FileManager::~FileManager()
+{
+
+}
+
 QList<QVariantMap> FileManager::dataToBeProcess() const
 {
     return mDataToBeProcess;
@@ -58,7 +63,7 @@ QList<QVariantMap> FileManager::loadFile(const QString &fileUrl)
       // Read the JSON data from the file
       QByteArray jsonData = file.readAll();
       file.close();
-
+      qDebug()<<jsonData;
       // Parse the JSON document
       QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
       if (jsonDoc.isNull()) {

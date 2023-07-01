@@ -11,6 +11,8 @@
 #include <QMutex>
 #include <QByteArray>
 #include <QThread>
+#include <chrono>
+#include <thread>
 using namespace Qt;
 class BluetoothManager : public QObject
 {

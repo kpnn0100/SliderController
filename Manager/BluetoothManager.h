@@ -25,7 +25,7 @@ public:
     explicit BluetoothManager(QObject *parent = nullptr);
     ~BluetoothManager();
     Q_INVOKABLE void write(QString message);
-    Q_INVOKABLE void write(double value);
+    Q_INVOKABLE void writeDouble(double value);
     Q_INVOKABLE void writeInt(int value);
     Q_INVOKABLE void write(QByteArray value);
     Q_INVOKABLE void findAndConnectSlider();

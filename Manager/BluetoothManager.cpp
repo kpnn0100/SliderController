@@ -19,29 +19,28 @@ void BluetoothManager::write(QByteArray message)
     if (socket!=nullptr)
     if (socket->isWritable())
     {
-        qDebug()<< "About to write: "<<endl;
-        qDebug()<< message<<endl;
+        qDebug()<< "About to write: "<<message<<endl;
         qDebug()<< socket->write(message)<<endl;
     }
 }
 void BluetoothManager::write(QString message)
 {
 
-    qDebug()<< "About to write string: "<<endl;
+    qDebug()<< "About to write string: "<<message<<endl;
     write(message.toUtf8());
 
 }
 
-void BluetoothManager::write(double value)
+void BluetoothManager::writeDouble(double value)
 {
-            qDebug()<< "About to write double: "<<endl;
+            qDebug()<< "About to write double: " <<value <<endl;
     write(doubleToByteArray(value));
 
 }
 
 void BluetoothManager::writeInt(int value)
 {
-        qDebug()<< "About to write int: "<<endl;
+        qDebug()<< "About to write int: "<< value<<endl;
     write(intToByteArray(value));
 
 }

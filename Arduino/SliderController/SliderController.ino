@@ -32,7 +32,7 @@ std::vector<std::vector<double>> valueList;
 double valueToPulse[3];
 
 
-long accelarator = 25600;
+long accelarator = 6400;
 const unsigned long REFRESH_INTERVAL = 100; // ms
 unsigned long lastRefreshTime = 0;
 const unsigned long RUN_REFRESH_INTERVAL = 100; // ms
@@ -42,6 +42,7 @@ uint8_t instruction;
 bool readState;
 int s;
 int cou = 0;
+long MAX_SPEED = 32000;
 CircularList<uint8_t> buff;
 Point cubic_bezier(Point p0, Point p1, Point p2, Point p3, double t)
 {
@@ -157,11 +158,13 @@ void keyframeToStep()
 
                 double result = bezierYfromTime(p[0], p[1], p[2], p[3], (j - time1) / (time2 - time1));
                 Serial.println(result, 8);
-                valueList[0].push_back(result);
+                valueList[k].push_back(result);
             }
         }
     }
 }
+double percentIncrease[3] = {1, 1, 1};
+double DIFF[3];
 
 void setup()
 {
@@ -173,17 +176,33 @@ void setup()
     SerialBT.begin();
     Serial.println("Bluetooth Started! Ready to pair...");
     stepper[0] = AccelStepper(1, 23, 22);
-    stepper[1] = AccelStepper(1, 14, 27);
-    stepper[2] = AccelStepper(1, 4, 16);
-    stepper[0].setAcceleration(accelarator);
-    stepper[1].setAcceleration(accelarator);
-    stepper[2].setAcceleration(accelarator);
+    stepper[1] = AccelStepper(1, 18, 19);
+    stepper[2] = AccelStepper(1, 17, 16);
+    pinMode(15,OUTPUT);
+    digitalWrite(15, LOW);
+    for (int i = 0; i < 3; i++)
+    {
+      stepper[i].setAcceleration(accelarator);
+      stepper[i].setMaxSpeed(MAX_SPEED);
+
+    }
+    
     valueList.push_back({});
     valueList.push_back({});
     valueList.push_back({});
     valueToPulse[0] = 1000 / 40 * 1600;
-valueToPulse[1] = 1600 * 9;
-valueToPulse[2] = 1600 * 3;
+    valueToPulse[1] = 40;// 1600 * 9/360
+    valueToPulse[2] = 1600 * 3/360;
+        for (int i = 0; i < 3; i++)
+    {
+      if (i>0)
+      {
+        DIFF[i] = 1 / valueToPulse[i]/360;
+      }
+      else
+        DIFF[i] = 1 / valueToPulse[i];
+        
+    }
     instruction = 0;
     readState = false;
 }
@@ -194,7 +213,8 @@ void readValue(int dimension)
     static uint8_t dataBuffer[sizeof(double)];
     if (!readStateForDim[dimension])
     {
-        Serial.println("about to receive x");
+        Serial.print("about to receive dim: ");
+        Serial.println(dimension);
         cou = 0;
         readStateForDim[dimension] = true;
     }
@@ -227,8 +247,10 @@ void readValue(int dimension)
 
 
 bool script_start = false;
+
 void loop()
-{
+{    
+
     static Keyframe currentKeyframe;
     static int propertyIndex = 0;
     static int index = 0;
@@ -240,17 +262,20 @@ void loop()
         SerialBT.write(Serial.read());
     }
 
-    if (SerialBT.available())
+    if (SerialBT.available() || buff.size()>0)
     {
-        buff.push_back(SerialBT.read());
+        if (SerialBT.available())
+        {
+          buff.push_back(SerialBT.read());
+        }
         if (instruction == 0)
         {
             Serial.println("new Instruction");
-            instruction = buff.back();
+            instruction = buff.front();
             Serial.println(instruction);
-            buff.pop_back();
+            buff.pop_front();
         }
-
+        
         switch (instruction)
         {
             // x  position
@@ -310,7 +335,6 @@ void loop()
                 }
                 else
                 {
-                    Serial.println("reading data...");
                     static uint8_t dataBuffer[sizeof(double)];
                     cou++;
                     if (cou == sizeof(double))
@@ -318,20 +342,15 @@ void loop()
                         for (int j = 0; j < sizeof(double); j++)
                         {
                             dataBuffer[j] = buff[0];
-                            Serial.print("buff ");
-                            Serial.println(dataBuffer[j]);
                             buff.pop_front();
               
-                            Serial.print("size of buff ");
-                            Serial.println(buff.size());
+
                         }
                         double value = charToDouble(dataBuffer);
                         Serial.print(value);
                         Serial.print(" ");
                         *(((double *)&currentKeyframe) + propertyIndex) = value;
                         propertyIndex++;
-                        Serial.println("propertyIndex");
-                        Serial.println(propertyIndex);
                         if (propertyIndex * sizeof(double) == sizeof(currentKeyframe))
                         {
                             keyframeList.push_back(currentKeyframe);
@@ -347,6 +366,7 @@ void loop()
                         for (int i = 0; i<3; i++)
                         {
                           stepper[i].moveTo((long)((keyframeList[0].value[i]) * valueToPulse[i]));
+                          stepper[i].setMaxSpeed(valueToPulse[0]);
                         }
                         keyframeToStep();
                         readState = false;
@@ -360,22 +380,28 @@ void loop()
         // i  start script
         case 105:
         {
+            if (script_start)
+            {
+              break;
+            }
             if (stepper[0].isRunning() || stepper[1].isRunning() || stepper[2].isRunning())
             {
+              Serial.println("Slider is not in stop state");
                 break;
             }
             if (keyframeList.size() < 2)
             {
-                instruction = 0;
+                Serial.println("size to small");
             }
             else
             {
+                Serial.println("start");
                 index = 0;
                 script_start = true;
 
-                Serial.println("start");
-                instruction = 0;
+                
             }
+
             break;
         }
         default:
@@ -386,18 +412,23 @@ void loop()
         }
     }
 
-    static double percentIncrease[3] = {1, 1, 1};
-    static double DIFF[3];
-    for (int i = 0; i < 3; i++)
-    {
-        DIFF[i] = 1 / valueToPulse[i];
-    }
+
 
     if (millis() - lastRunRefreshTime >= RUN_REFRESH_INTERVAL)
     {
         lastRunRefreshTime += RUN_REFRESH_INTERVAL;
+
+                
+
         //                            Serial.print("current pos: ");
         //           Serial.println((double)stepper[0].currentPosition() / valueToPulse[0], 8 );
+//             for (int i = 0; i < 3; i++)
+//                {
+//                    Serial.print("Stepper ");
+//                    Serial.print(i);
+//                    Serial.print(": ");
+//                    Serial.println(stepper[i].currentPosition());
+//                }
         if (script_start)
         {
             index++;
@@ -406,69 +437,82 @@ void loop()
                 for (int i = 0; i < 3; i++)
                 {
                     percentIncrease[i] = 1;
-                    stepper[i].moveTo((long)((keyframeList[0].value[i]) * valueToPulse[0]));
+                    stepper[i].moveTo((long)((keyframeList[0].value[i]) * valueToPulse[i]));
                     stepper[i].setMaxSpeed(accelarator);
                 }
 
                 Serial.println("stopping");
+                instruction = 0;
                 script_start = false;
             }
             else
             {
+
                 long delta[3];
                 static long oldSpeedNeeded[3] = {0, 0, 0};
                 long distanceToNext[3];
                 long speedNeeded[3];
-                for (int i = 0; i < 3; i++)
+
+                if (index>1)
                 {
-                    delta[i] = (stepper[i].currentPosition() - valueList[i][index - 1] * valueToPulse[i]);
-                    {
-                        // me   -----> target
-                        if (delta[i] < 0)
-                        { // delta  ///
-                            //  from -------me--------target
-                            if (valueList[i][index - 1] - valueList[i][index - 2] > 0)
-                            {
-                                delta[i] = abs(delta[i]);
-                            }
-                            //  me--------target---------from
-                            else
-                            {
-                            }
-                        }
-                        else
-                        {
-                            // delta  ///
-                            //  from ---------------target ---------me
-                            if (valueList[i][index - 1] - valueList[i][index - 2] > 0)
-                            {
-                                delta[i] = -delta[i];
-                            } // delta  ///
-                            //  target---------me---------from
-                            else
-                            {
-                            }
-                        }
-                        percentIncrease[i] += delta[i] * DIFF[i];
-                        if (percentIncrease[i] > 2)
-                        {
-                            percentIncrease[i] = 2;
-                        }
-                    }
-                    oldSpeedNeeded[i] = 0;
-                    distanceToNext[i] = (valueList[i][index] * valueToPulse[i] - stepper[i].currentPosition());
-                    speedNeeded[i] = (long)(((double)distanceToNext[i]) / dt);
+                  for (int i = 0; i < 3; i++)
+                  {
 
-                    speedNeeded[i] *= percentIncrease[i];
-                    stepper[0].setSpeed(speedNeeded[i]);
+                      delta[i] = (stepper[i].currentPosition() - valueList[i][index - 1] * valueToPulse[i]);
+                
+                      // me   -----> target
+                      if (delta[i] < 0)
+                      { // delta  ///
+                          //  from -------me--------target
+                          if (valueList[i][index - 1] - valueList[i][index - 2] > 0)
+                          {
+                              delta[i] = abs(delta[i]);
+                          }
+                      }
+                      else
+                      {
+                          // delta  ///
+                          //  from ---------------target ---------me
+                          if (valueList[i][index - 1] - valueList[i][index - 2] > 0)
+                          {
+                              delta[i] = -delta[i];
+                          } // delta  ///
+                      }
+
+                      percentIncrease[i] += (delta[i] * DIFF[i]);
+                      if (percentIncrease[i] > 2)
+                      {
+                          percentIncrease[i] = 2;
+                      }
+                      if (percentIncrease[i] <0 )
+                      {
+                          percentIncrease[i] = 0;
+                      }
+                      oldSpeedNeeded[i] = 0;
+                      distanceToNext[i] = (valueList[i][index] * valueToPulse[i] - stepper[i].currentPosition());
+
+                      speedNeeded[i] = (long)(((double)distanceToNext[i]) / dt);
+                      if (distanceToNext[i]<0)
+                      {
+                        speedNeeded[i] = -abs(speedNeeded[i]);
+                      }
+                      speedNeeded[i] *= percentIncrease[i];
+                      stepper[i].setSpeed(speedNeeded[i]);
+                      for (int i = 0; i < 3; i++)
+                      {
+                          oldSpeedNeeded[i] = speedNeeded[i];
+                      }
+                      for (int i = 0; i < 3; i++)
+                      {
+                          Serial.print((double)stepper[i].currentPosition() / valueToPulse[i], 8);
+                          Serial.print(", ");
+                      }
+                      Serial.println();
+                  }
                 }
-
                 //                stepper[0].setMaxSpeed(speedNeeded);
                 //                stepper[0].setAcceleration(abs((long)(((double)(speedNeeded-oldSpeedNeeded))/dt)));
-                for (int i = 0; i < 3; i++)
-                {
-                    oldSpeedNeeded[i] = speedNeeded[i];
-                }
+
                 //                Serial.print("distanceToNext ");
                 //                 Serial.println(distanceToNext);
                 //                  Serial.print("movingDirection ");
@@ -482,12 +526,7 @@ void loop()
                 //                Serial.print("new Max speed: ");
                 //                Serial.println(speedNeeded, 8);
                 //
-                Serial.print("current pos: ");
-                Serial.println((double)stepper[0].currentPosition() / valueToPulse[0], 8);
-                Serial.print("current pan: ");
-                Serial.println((double)stepper[1].currentPosition() / valueToPulse[1], 8);
-                Serial.print("current tilt: ");
-                Serial.println((double)stepper[2].currentPosition() / valueToPulse[2], 8);
+
                 //                Serial.print("moving to: ");
                 //                Serial.println((valueList[0][index]), 8);
                 //                Serial.print("current speed: ");

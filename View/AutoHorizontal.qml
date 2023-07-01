@@ -143,11 +143,16 @@ Item {
         bleManager.writeInt(keyframeList.count);
         for (let i = 0; i < keyframeList.count;i++)
         {
-            for (let role in keyframeList.get(i))
-            {
-             bleManager.write( keyframeList.get(i)[role]);
 
-            }
+             bleManager.writeDouble( keyframeList.get(i).time);
+              bleManager.writeDouble(keyframeList.get(i).position)
+
+              bleManager.writeDouble( keyframeList.get(i).pan)
+               bleManager.writeDouble( keyframeList.get(i).tilt)
+              bleManager.writeDouble( keyframeList.get(i).focal)
+              bleManager.writeDouble( keyframeList.get(i).ingoing)
+              bleManager.writeDouble( keyframeList.get(i).outgoing)
+
         }
     }
 

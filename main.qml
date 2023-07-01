@@ -20,7 +20,7 @@ Window {
     {
         bleManager.blockCall()
         bleManager.write("x");
-        bleManager.write(mainWindow.position);
+        bleManager.writeDouble(mainWindow.position);
         bleManager.unlockCall();
         console.log("move: x :" + mainWindow.position )
     }
@@ -36,7 +36,7 @@ Window {
     {
         bleManager.blockCall()
         bleManager.write("p");
-        bleManager.write(mainWindow.pan);
+        bleManager.writeDouble(mainWindow.pan);
         bleManager.unlockCall();
         console.log("move: pan :" + mainWindow.pan )
     }
@@ -44,7 +44,7 @@ Window {
     {
         bleManager.blockCall()
         bleManager.write("t");
-        bleManager.write(mainWindow.tilt);
+        bleManager.writeDouble(mainWindow.tilt);
         bleManager.unlockCall();
         console.log("move: tilt :" + mainWindow.tilt )
     }

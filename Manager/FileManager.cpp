@@ -66,6 +66,7 @@ QList<QVariantMap> FileManager::loadFile(const QString &fileUrl)
       qDebug()<<jsonData;
       // Parse the JSON document
       QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
+      qDebug()<<jsonDoc;
       if (jsonDoc.isNull()) {
           qDebug() << "Failed to parse JSON data from file:" << fileUrl;
           return dataList;

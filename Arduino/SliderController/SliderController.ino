@@ -33,16 +33,16 @@ double valueToPulse[3];
 
 
 long accelarator = 6400;
-const unsigned long REFRESH_INTERVAL = 100; // ms
+const unsigned long REFRESH_INTERVAL = 10; // ms
 unsigned long lastRefreshTime = 0;
-const unsigned long RUN_REFRESH_INTERVAL = 100; // ms
+const unsigned long RUN_REFRESH_INTERVAL = 200; // ms
 double dt = (double)RUN_REFRESH_INTERVAL / 1000.0;
 unsigned long lastRunRefreshTime = 0;
 uint8_t instruction;
 bool readState;
 int s;
 int cou = 0;
-long MAX_SPEED = 32000;
+long MAX_SPEED = 16000;
 CircularList<uint8_t> buff;
 Point cubic_bezier(Point p0, Point p1, Point p2, Point p3, double t)
 {
@@ -108,8 +108,7 @@ void keyframeToStep()
     {
         velocity.push_back({0.0});
 
-        Serial.println("start processing");
-        Serial.println("calculating velocity for ");
+        Serial.print("start processing for dim ");
         Serial.println(k);
 
         for (int i = 1; i < keyframeList.size() - 1; i++)
@@ -121,38 +120,27 @@ void keyframeToStep()
             velocity[k].push_back((pos2 - pos1) / (time2 - time1));
         }
         velocity[k].push_back(0.0);
-
-        Serial.println("dividing keyframe");
         for (int i = 0; i < keyframeList.size() - 1; i++)
         {
-            Serial.println(i);
             double time1 = keyframeList.at(i).time;
             double time2 = keyframeList.at(i + 1).time;
             double pos1 = keyframeList.at(i).value[k];
             double pos2 = keyframeList.at(i + 1).value[k];
-            Serial.println("ingoing and outgoing");
             double outgoing = keyframeList.at(i).outgoing / 100;
             double ingoing = keyframeList.at(i + 1).ingoing / 100;
-
-            Serial.print("point ");
             Point p[4];
             p[0].x = time1;
             p[0].y = pos1;
 
             p[1].x = time1 + (time2 - time1) * outgoing;
-            ;
-            p[1].y = pos1 - velocity[k][i] * (time2 - time1) * outgoing;
-            ;
+            p[1].y = pos1 + velocity[k][i] * (time2 - time1) * outgoing;
+
 
             p[2].x = time2 - (time2 - time1) * ingoing;
-            ;
-            p[2].y = pos2 + velocity[k][i + 1] * (time2 - time1) * ingoing;
-            ;
+            p[2].y = pos2 - velocity[k][i + 1] * (time2 - time1) * ingoing;
 
             p[3].x = time2;
             p[3].y = pos2;
-
-            Serial.println("dividing");
             for (double j = time1; j < time2; j += dt)
             {
 
@@ -178,6 +166,8 @@ void setup()
     stepper[0] = AccelStepper(1, 23, 22);
     stepper[1] = AccelStepper(1, 18, 19);
     stepper[2] = AccelStepper(1, 17, 16);
+    stepper[0].setPinsInverted(true);
+    stepper[1].setPinsInverted(true);
     pinMode(15,OUTPUT);
     digitalWrite(15, LOW);
     for (int i = 0; i < 3; i++)
@@ -206,10 +196,9 @@ void setup()
     instruction = 0;
     readState = false;
 }
-
+bool readStateForDim[3] = {false, false, false};
 void readValue(int dimension)
 {
-    static bool readStateForDim[3] = {false, false, false};
     static uint8_t dataBuffer[sizeof(double)];
     if (!readStateForDim[dimension])
     {
@@ -237,7 +226,7 @@ void readValue(int dimension)
             Serial.print(" ");
             stepper[dimension].stop();
             stepper[dimension].moveTo((long)(value * valueToPulse[dimension]));
-            stepper[dimension].setMaxSpeed(stepper[dimension].currentPosition() - (long)(value * valueToPulse[dimension]));
+            stepper[dimension].setMaxSpeed(MAX_SPEED);
             cou = 0;
             readStateForDim[dimension] = false;
             instruction = 0;
@@ -247,7 +236,8 @@ void readValue(int dimension)
 
 
 bool script_start = false;
-
+long TIME_OUT = 2000;
+long checkIn;
 void loop()
 {    
 
@@ -270,6 +260,7 @@ void loop()
         }
         if (instruction == 0)
         {
+            checkIn = millis();
             Serial.println("new Instruction");
             instruction = buff.front();
             Serial.println(instruction);
@@ -294,6 +285,28 @@ void loop()
         {
             readValue(2);
             break;
+        }
+        //unlock
+        case 117:
+        {
+          buff.clear();
+          Serial.println("unlocked");
+          digitalWrite(15,HIGH);
+          instruction = 0;
+          break;
+        }
+        //lock
+        case 108:
+        {
+          buff.clear();
+          Serial.println("locked");
+          digitalWrite(15,LOW);
+          for (int i = 0; i<3; i++ )
+          {
+            stepper[i].setCurrentPosition(0);
+          }
+          instruction = 0;
+          break;
         }
         // s send script
         case 115:
@@ -366,7 +379,7 @@ void loop()
                         for (int i = 0; i<3; i++)
                         {
                           stepper[i].moveTo((long)((keyframeList[0].value[i]) * valueToPulse[i]));
-                          stepper[i].setMaxSpeed(valueToPulse[0]);
+                          stepper[i].setMaxSpeed(MAX_SPEED);
                         }
                         keyframeToStep();
                         readState = false;
@@ -380,6 +393,7 @@ void loop()
         // i  start script
         case 105:
         {
+            buff.clear();
             if (script_start)
             {
               break;
@@ -414,6 +428,25 @@ void loop()
 
 
 
+    if (millis() - lastRefreshTime >= REFRESH_INTERVAL)
+    {
+        lastRefreshTime += REFRESH_INTERVAL;
+        if (script_start)
+        {
+          for (int i = 0 ; i<3;i++)
+          {
+//              Serial.print(stepper[i].currentPosition()/valueToPulse[i],6);
+//            Serial.print(", ");
+            Serial.print(stepper[i].speed());
+            Serial.print(", ");
+            Serial.print(stepper[i].expectedSpeed());
+            Serial.print(", ");
+            Serial.print(stepper[i].acceleration());
+            Serial.print(", ");
+          }
+          Serial.println();
+        }
+    }
     if (millis() - lastRunRefreshTime >= RUN_REFRESH_INTERVAL)
     {
         lastRunRefreshTime += RUN_REFRESH_INTERVAL;
@@ -438,7 +471,7 @@ void loop()
                 {
                     percentIncrease[i] = 1;
                     stepper[i].moveTo((long)((keyframeList[0].value[i]) * valueToPulse[i]));
-                    stepper[i].setMaxSpeed(accelarator);
+                    stepper[i].setMaxSpeed(MAX_SPEED);
                 }
 
                 Serial.println("stopping");
@@ -479,7 +512,7 @@ void loop()
                           } // delta  ///
                       }
 
-                      percentIncrease[i] += (delta[i] * DIFF[i]);
+                      percentIncrease[i] += (delta[i] * DIFF[i]*dt);
                       if (percentIncrease[i] > 2)
                       {
                           percentIncrease[i] = 2;
@@ -490,24 +523,16 @@ void loop()
                       }
                       oldSpeedNeeded[i] = 0;
                       distanceToNext[i] = (valueList[i][index] * valueToPulse[i] - stepper[i].currentPosition());
+                      long dataI = long(distanceToNext[i]/dt);
 
-                      speedNeeded[i] = (long)(((double)distanceToNext[i]) / dt);
-                      if (distanceToNext[i]<0)
-                      {
-                        speedNeeded[i] = -abs(speedNeeded[i]);
-                      }
+
+                      speedNeeded[i] = dataI;
+
                       speedNeeded[i] *= percentIncrease[i];
-                      stepper[i].setSpeed(speedNeeded[i]);
-                      for (int i = 0; i < 3; i++)
-                      {
-                          oldSpeedNeeded[i] = speedNeeded[i];
-                      }
-                      for (int i = 0; i < 3; i++)
-                      {
-                          Serial.print((double)stepper[i].currentPosition() / valueToPulse[i], 8);
-                          Serial.print(", ");
-                      }
-                      Serial.println();
+                      stepper[i].setExpectedSpeed(speedNeeded[i]);
+                      oldSpeedNeeded[i] = speedNeeded[i];
+
+               
                   }
                 }
                 //                stepper[0].setMaxSpeed(speedNeeded);
@@ -534,11 +559,24 @@ void loop()
             }
         }
     }
+    if (millis()>checkIn + TIME_OUT)
+    {
+      if (!script_start)
+      {
+        buff.clear();
+        instruction = 0;
+        cou = 0;
+        for (int i = 0; i<3; i++)
+        {
+          readStateForDim[i] = false;
+        }
+      }
+    }
     for (int i = 0; i < 3; i++)
     {
         if (script_start)
         {
-            stepper[i].runSpeed();
+            stepper[i].runSpeedWithAccel();
         }
         else
         {

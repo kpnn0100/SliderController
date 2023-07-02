@@ -15,7 +15,7 @@ BluetoothManager::~BluetoothManager(){
 }
 void BluetoothManager::write(QByteArray message)
 {
-    QThread::msleep(2);
+
     if (socket!=nullptr)
     if (socket->isWritable())
     {

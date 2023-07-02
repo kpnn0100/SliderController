@@ -11,69 +11,14 @@ Rectangle
     property double tilt: rightPad.valueY*tiltMaximum*2 - tiltMaximum
     property double pan: isAutoPanning.isChecked?
                              ((trackerX-position)>0?
-                                  180-Math.atan(trackerY/(trackerX-position))/Math.PI*180:
+                                  90-Math.atan(trackerY/(trackerX-position))/Math.PI*180:
                                   Math.atan(trackerY/Math.abs(trackerX-position))/Math.PI*180
                               )
-                           :rightPad.valueX*panMaximum
+                           :panMinimum + rightPad.valueX*(panMaximum-panMinimum)
     id: middle
 
     color: "transparent"
-    Dialog {
-        id: dialog
-        title: "Set tracker's position"
-        width: 300
-        height: 200
-        modal: true
-        anchors.centerIn: parent
-        property real xValue: 0.0
-        property real yValue: 0.0
-        property real zValue: 0.0
 
-        onAccepted: {
-            // Save the values entered by the user
-            dialog.xValue = parseFloat(xInput.text)
-            dialog.yValue = parseFloat(yInput.text)
-            dialog.zValue = parseFloat(zInput.text)
-        }
-
-        contentItem: Column {
-            spacing: 10
-            Row {
-                spacing: 10
-                Label {
-                    text: "X:"
-                }
-                TextField {
-                    id: xInput
-
-                    text: dialog.xValue.toString()
-                }
-            }
-            Row {
-                spacing: 10
-                Label {
-                    text: "Y:"
-                }
-                TextField {
-                    id: yInput
-
-                    text: dialog.yValue.toString()
-                }
-            }
-            Row {
-                spacing: 10
-                Label {
-                    text: "Z:"
-                }
-                TextField {
-                    id: zInput
-
-                    text: dialog.zValue.toString()
-                }
-            }
-        }
-        standardButtons: Dialog.Ok | Dialog.Cancel
-    }
     //Slide Region
 
     Rectangle
@@ -241,10 +186,6 @@ Rectangle
             MouseArea
             {
                 anchors.fill: parent
-                onDoubleClicked:
-                {
-                    dialog.open()
-                }
             }
 
         }
@@ -454,7 +395,7 @@ Rectangle
                     angle:isAutoPanning.isChecked?(-90+((trackerX-camera.x/xyPad.width*xMaximum)>0?
                                                             180-Math.atan(trackerY/(trackerX-camera.x/xyPad.width*xMaximum))/Math.PI*180:
                                                             Math.atan(trackerY/Math.abs(trackerX-camera.x/xyPad.width*xMaximum))/Math.PI*180
-                                                        )) : -90+pan
+                                                        )) : 0+pan
 
                     Behavior on angle
                     {
@@ -738,7 +679,7 @@ Rectangle
                 property double valueX: dummyRightPad.width/width
                 property double valueY: dummyRightPad.height/height
                 property double defaultX:0.5
-                property double defaultY:0
+                property double defaultY:0.5
                 property double xPressed
                 property double yPressed
                 Item

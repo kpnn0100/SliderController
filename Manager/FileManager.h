@@ -12,6 +12,7 @@
 #include <QFile>
 
 #include <QString>
+#include <QStringConverter>
 class FileManager : public QObject
 {
     Q_OBJECT

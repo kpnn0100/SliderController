@@ -24,7 +24,9 @@ Item {
 
     onCurrentScriptPathChanged:
     {
-        var nameSplit = currentScriptPath.toString().split('/')
+        let urlString =decodeURIComponent(currentScriptPath.toString(), "UTF8")
+        let nameSplit =urlString.split('/')
+        console.log(nameSplit)
         mainItem.videoName =  nameSplit[nameSplit.length-2]
         mainItem.scriptName =  nameSplit[nameSplit.length-1]
         keyframeListView.currentIndex=0
@@ -169,6 +171,7 @@ Item {
     }
     onRestartScript:
     {
+
         keyframeListView.currentIndex = 0;
 
     }
@@ -729,7 +732,7 @@ Item {
                                         clip: true
                                         TextInput {
                                             id: panTextInput
-                                            validator: DoubleValidator {bottom: 0; top: 1000}
+                                            validator: DoubleValidator {bottom: -90; top: 90}
                                             text: 0.00 + ""
                                             width: parent.width
                                             x: globalSpacing/2
@@ -788,7 +791,7 @@ Item {
                                         clip: true
                                         TextInput {
                                             id: tiltTextInput
-                                            validator: DoubleValidator {bottom: 0; top: 1000}
+                                            validator: DoubleValidator {bottom: -45; top: 45}
                                             width: parent.width
                                             text:"0"
                                             x: globalSpacing/2
@@ -1439,7 +1442,7 @@ Item {
                     {
                         origin.x:0
                         origin.y:globalSpacing*1.5
-                        angle: -90+pan
+                        angle: 0+pan
 
                         Behavior on angle
                         {

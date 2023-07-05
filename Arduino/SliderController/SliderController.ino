@@ -4,6 +4,7 @@
 #include <vector>
 #include "CircularList.h"
 #include "Keyframe.h"
+int numberOfDim = 1;
 double charToDouble(uint8_t *charArray)
 {
     double result;
@@ -76,7 +77,7 @@ double findTfromX(Point p0, Point p1, Point p2, Point p3, double x)
     double dataToSearch = cubic_bezier(p0, p1, p2, p3, indexOfX).x;
     double xNeedEqual = (dataToSearch - p0.x) / delta;
 
-    while (std::abs(x - xNeedEqual) > 0.00001)
+    while (std::abs(x - xNeedEqual) > 0.000001)
     {
         if (x > xNeedEqual)
         {
@@ -105,7 +106,7 @@ void keyframeToStep()
 {
     std::vector<std::vector<double>> velocity;
 
-    for (int k = 0; k < 3; k++)
+    for (int k = 0; k < numberOfDim; k++)
     {
         velocity.push_back({0.0});
 
@@ -142,7 +143,7 @@ void keyframeToStep()
 
             p[3].x = time2;
             p[3].y = pos2;
-            for (double j = time1; j < time2; j += dt)
+            for (double j = time1; j < time2-dt/10; j += dt)
             {
 
                 double result = bezierYfromTime(p[0], p[1], p[2], p[3], (j - time1) / (time2 - time1));
@@ -178,7 +179,7 @@ void setup()
     minDim[2]=-45;
     pinMode(15,OUTPUT);
     digitalWrite(15, LOW);
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < numberOfDim; i++)
     {
       stepper[i].setAcceleration(accelarator);
       stepper[i].setMaxSpeed(MAX_SPEED);
@@ -191,7 +192,7 @@ void setup()
     valueToPulse[0] = 1000 / 40 * 1600;
     valueToPulse[1] = 40;// 1600 * 9/360
     valueToPulse[2] = 1600 * 3/360;
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < numberOfDim; i++)
     {
       if (i>0)
       {
@@ -309,7 +310,7 @@ void loop()
           buff.clear();
           Serial.println("locked");
           digitalWrite(15,LOW);
-          for (int i = 0; i<3; i++ )
+          for (int i = 0; i<numberOfDim; i++ )
           {
             stepper[i].setCurrentPosition(0);
           }
@@ -327,7 +328,7 @@ void loop()
                 cou = 0;
                 readState = true;
                 keyframeList.clear();
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < numberOfDim; i++)
                  {
                     valueList[i].clear();
                  }
@@ -384,7 +385,7 @@ void loop()
                     if (keyframeList.size() == s)
                     {
                         Serial.println("done reading data");
-                        for (int i = 0; i<3; i++)
+                        for (int i = 0; i<numberOfDim; i++)
                         {
                           stepper[i].moveTo((long)((keyframeList[0].value[i]) * valueToPulse[i]));
                           stepper[i].setMaxSpeed(MAX_SPEED);
@@ -443,17 +444,21 @@ void loop()
          lastRefreshTime += REFRESH_INTERVAL;
          if (script_start)
          {
-           for (int i = 0 ; i<1;i++)
-           {
- //              Serial.print(stepper[i].currentPosition()/valueToPulse[i],6);
- //            Serial.print(", ");
-             Serial.print(stepper[i].speed());
-             Serial.print(", ");
-             Serial.print(stepper[i].expectedSpeed());
-             Serial.print(", ");
-             Serial.print(stepper[i].currentPosition());
-           }
-           Serial.println();
+//            for (int i = 0 ; i<1;i++)
+//            {
+//  //              Serial.print(stepper[i].currentPosition()/valueToPulse[i],6);
+
+//              Serial.print(stepper[i].speed());
+//             Serial.print(", ");
+//             Serial.print(stepper[i].expectedSpeed());
+
+//            }
+//            Serial.println();
+
+              Serial.print(stepper[0].speed());
+              Serial.print(", ");
+              Serial.print(stepper[0].expectedSpeed());
+              Serial.println();
          }
      }
     if (millis() - lastRunRefreshTime >= RUN_REFRESH_INTERVAL)
@@ -476,7 +481,7 @@ void loop()
             index++;
             if (index == valueList[0].size())
             {
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < numberOfDim; i++)
                 {
                     percentIncrease[i] = 1;
                     stepper[i].setAcceleration(accelarator);
@@ -499,7 +504,7 @@ void loop()
 
                 if (index>1)
                 {
-                  for (int i = 0; i < 3; i++)
+                  for (int i = 0; i < numberOfDim; i++)
                   {
 
                       delta[i] = (stepper[i].currentPosition() - valueList[i][index - 1] * valueToPulse[i]);
@@ -551,9 +556,9 @@ void loop()
                       }
                       else
                       {
-                        stepper[i].setAcceleration(long(speedToNext));
+                        stepper[i].setAcceleration(speedToNext);
                       }
-               
+
                   }
                 }
                 //                stepper[0].setMaxSpeed(speedNeeded);
@@ -587,13 +592,13 @@ void loop()
         buff.clear();
         instruction = 0;
         cou = 0;
-        for (int i = 0; i<3; i++)
+        for (int i = 0; i<numberOfDim; i++)
         {
           readStateForDim[i] = false;
         }
       }
     }
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < numberOfDim; i++)
     {
         if (script_start)
         {

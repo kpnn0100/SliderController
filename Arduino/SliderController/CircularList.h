@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CIRCULARLIST_H
+#define CIRCULARLIST_H
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -267,3 +268,4 @@ private:
         return out;
     }
 };
+#endif

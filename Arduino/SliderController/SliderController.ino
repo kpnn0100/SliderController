@@ -4,7 +4,7 @@
 #include <vector>
 #include "CircularList.h"
 #include "Keyframe.h"
-int numberOfDim = 1;
+int numberOfDim = 3;
 double charToDouble(uint8_t *charArray)
 {
     double result;
@@ -117,9 +117,13 @@ void keyframeToStep()
         {
             double time1 = keyframeList.at(i - 1).time;
             double time2 = keyframeList.at(i).time;
+            double time3 = keyframeList.at(i+1).time;
             double pos1 = keyframeList.at(i - 1).value[k];
             double pos2 = keyframeList.at(i).value[k];
-            velocity[k].push_back((pos2 - pos1) / (time2 - time1));
+            double pos3 = keyframeList.at(i+1).value[k];
+            double veBefore = (pos2 - pos1) / (time2 - time1);
+            double veAfter = (pos3 - pos2) / (time3 - time2);
+            velocity[k].push_back(veBefore+veAfter/2);
         }
         velocity[k].push_back(0.0);
         for (int i = 0; i < keyframeList.size() - 1; i++)
@@ -454,10 +458,13 @@ void loop()
 
 //            }
 //            Serial.println();
-
-              Serial.print(stepper[0].speed());
+          for (int i = 0; i<numberOfDim; i++)
+          {
+              Serial.print(stepper[i].speed());
               Serial.print(", ");
-              Serial.print(stepper[0].expectedSpeed());
+               Serial.print(stepper[i].expectedSpeed());
+                            Serial.print(", ");
+          }
               Serial.println();
          }
      }

@@ -32,17 +32,18 @@ std::vector<std::vector<double>> valueList;
 double valueToPulse[3];
 
 
-long accelarator = 6400;
+long accelarator = 4500;
 const unsigned long REFRESH_INTERVAL = 10; // ms
 unsigned long lastRefreshTime = 0;
-const unsigned long RUN_REFRESH_INTERVAL = 200; // ms
+const unsigned long RUN_REFRESH_INTERVAL = 100; // ms
 double dt = (double)RUN_REFRESH_INTERVAL / 1000.0;
 unsigned long lastRunRefreshTime = 0;
 uint8_t instruction;
 bool readState;
 int s;
 int cou = 0;
-long MAX_SPEED = 16000;
+long MAX_SPEED = 8000;
+int minDim[3];
 CircularList<uint8_t> buff;
 Point cubic_bezier(Point p0, Point p1, Point p2, Point p3, double t)
 {
@@ -75,7 +76,7 @@ double findTfromX(Point p0, Point p1, Point p2, Point p3, double x)
     double dataToSearch = cubic_bezier(p0, p1, p2, p3, indexOfX).x;
     double xNeedEqual = (dataToSearch - p0.x) / delta;
 
-    while (std::abs(x - xNeedEqual) > 0.002)
+    while (std::abs(x - xNeedEqual) > 0.00001)
     {
         if (x > xNeedEqual)
         {
@@ -145,6 +146,10 @@ void keyframeToStep()
             {
 
                 double result = bezierYfromTime(p[0], p[1], p[2], p[3], (j - time1) / (time2 - time1));
+                if (result < minDim[k])
+                {
+                  result = minDim[k];
+                }
                 Serial.println(result, 8);
                 valueList[k].push_back(result);
             }
@@ -168,6 +173,9 @@ void setup()
     stepper[2] = AccelStepper(1, 17, 16);
     stepper[0].setPinsInverted(true);
     stepper[1].setPinsInverted(true);
+    minDim[0]=0;
+    minDim[1]=-90;
+    minDim[2]=-45;
     pinMode(15,OUTPUT);
     digitalWrite(15, LOW);
     for (int i = 0; i < 3; i++)
@@ -187,10 +195,10 @@ void setup()
     {
       if (i>0)
       {
-        DIFF[i] = 1 / valueToPulse[i]/360;
+        DIFF[i] = 0 / valueToPulse[i]/360;
       }
       else
-        DIFF[i] = 1 / valueToPulse[i];
+        DIFF[i] = 0 / valueToPulse[i];
         
     }
     instruction = 0;
@@ -400,12 +408,14 @@ void loop()
             }
             if (stepper[0].isRunning() || stepper[1].isRunning() || stepper[2].isRunning())
             {
-              Serial.println("Slider is not in stop state");
+                Serial.println("Slider is not in stop state");
+                instruction = 0;
                 break;
             }
             if (keyframeList.size() < 2)
             {
                 Serial.println("size to small");
+                instruction = 0;
             }
             else
             {
@@ -428,25 +438,24 @@ void loop()
 
 
 
-    if (millis() - lastRefreshTime >= REFRESH_INTERVAL)
-    {
-        lastRefreshTime += REFRESH_INTERVAL;
-        if (script_start)
-        {
-          for (int i = 0 ; i<3;i++)
-          {
-//              Serial.print(stepper[i].currentPosition()/valueToPulse[i],6);
-//            Serial.print(", ");
-            Serial.print(stepper[i].speed());
-            Serial.print(", ");
-            Serial.print(stepper[i].expectedSpeed());
-            Serial.print(", ");
-            Serial.print(stepper[i].acceleration());
-            Serial.print(", ");
-          }
-          Serial.println();
-        }
-    }
+     if (millis() - lastRefreshTime >= REFRESH_INTERVAL)
+     {
+         lastRefreshTime += REFRESH_INTERVAL;
+         if (script_start)
+         {
+           for (int i = 0 ; i<1;i++)
+           {
+ //              Serial.print(stepper[i].currentPosition()/valueToPulse[i],6);
+ //            Serial.print(", ");
+             Serial.print(stepper[i].speed());
+             Serial.print(", ");
+             Serial.print(stepper[i].expectedSpeed());
+             Serial.print(", ");
+             Serial.print(stepper[i].currentPosition());
+           }
+           Serial.println();
+         }
+     }
     if (millis() - lastRunRefreshTime >= RUN_REFRESH_INTERVAL)
     {
         lastRunRefreshTime += RUN_REFRESH_INTERVAL;
@@ -470,11 +479,13 @@ void loop()
                 for (int i = 0; i < 3; i++)
                 {
                     percentIncrease[i] = 1;
+                    stepper[i].setAcceleration(accelarator);
                     stepper[i].moveTo((long)((keyframeList[0].value[i]) * valueToPulse[i]));
                     stepper[i].setMaxSpeed(MAX_SPEED);
                 }
 
                 Serial.println("stopping");
+                      
                 instruction = 0;
                 script_start = false;
             }
@@ -531,7 +542,17 @@ void loop()
                       speedNeeded[i] *= percentIncrease[i];
                       stepper[i].setExpectedSpeed(speedNeeded[i]);
                       oldSpeedNeeded[i] = speedNeeded[i];
-
+                      
+                      double speedToNext = abs(stepper[i].speed()-speedNeeded[i]);
+                      speedToNext = speedToNext/dt;
+                      if (abs(speedToNext) >accelarator)
+                      {
+                       stepper[i].setAcceleration(accelarator);
+                      }
+                      else
+                      {
+                        stepper[i].setAcceleration(long(speedToNext));
+                      }
                
                   }
                 }
@@ -576,7 +597,11 @@ void loop()
     {
         if (script_start)
         {
-            stepper[i].runSpeedWithAccel();
+            if(stepper[i].runSpeedWithAccel())
+            {
+
+
+            }
         }
         else
         {

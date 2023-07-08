@@ -16,6 +16,21 @@ Window {
     property double focal: bar.currentIndex == 0 ? manualHorizontal.focal : autoHorizontal.focal
     property double pan: bar.currentIndex == 0 ? manualHorizontal.pan : autoHorizontal.pan
     property double tilt: bar.currentIndex == 0 ? manualHorizontal.tilt : autoHorizontal.tilt
+    function trigger()
+    {
+        bleManager.blockCall()
+        bleManager.write("x");
+        bleManager.writeDouble(mainWindow.position);
+        bleManager.write("p");
+        bleManager.writeDouble(mainWindow.pan);
+        bleManager.write("t");
+        bleManager.writeDouble(mainWindow.tilt);
+        bleManager.unlockCall();
+        console.log("move: x :" + mainWindow.position )
+        console.log("move: pan :" + mainWindow.pan )
+        console.log("move: tilt :" + mainWindow.tilt )
+    }
+
     onPositionChanged:
     {
         bleManager.blockCall()

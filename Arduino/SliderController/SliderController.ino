@@ -34,7 +34,7 @@ double valueToPulse[3];
 
 
 long accelarator = 4500;
-const unsigned long REFRESH_INTERVAL = 10; // ms
+const unsigned long REFRESH_INTERVAL = 1000; // ms
 unsigned long lastRefreshTime = 0;
 const unsigned long RUN_REFRESH_INTERVAL = 100; // ms
 double dt = (double)RUN_REFRESH_INTERVAL / 1000.0;
@@ -403,6 +403,19 @@ void loop()
             }
             break;
         }
+        //o stop script
+        case 111:
+        {
+          script_start = false;
+          Serial.println("stop slider");
+          for (int i = 0; i<numberOfDim;i++)
+          {
+            stepper[i].setAcceleration(accelarator);
+            stepper[i].stop();
+          }
+          instruction = 0;
+          break;
+        }
         // i  start script
         case 105:
         {
@@ -427,8 +440,7 @@ void loop()
                 Serial.println("start");
                 index = 0;
                 script_start = true;
-
-                
+                instruction = 0;
             }
 
             break;
@@ -446,7 +458,7 @@ void loop()
      if (millis() - lastRefreshTime >= REFRESH_INTERVAL)
      {
          lastRefreshTime += REFRESH_INTERVAL;
-         if (script_start)
+         if (script_start || true)
          {
 //            for (int i = 0 ; i<1;i++)
 //            {
@@ -460,10 +472,8 @@ void loop()
 //            Serial.println();
           for (int i = 0; i<numberOfDim; i++)
           {
-              Serial.print(stepper[i].speed());
-              Serial.print(", ");
-               Serial.print(stepper[i].expectedSpeed());
-                            Serial.print(", ");
+              Serial.print(stepper[i].currentPosition());
+               Serial.print(", ");
           }
               Serial.println();
          }

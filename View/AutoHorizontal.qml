@@ -43,12 +43,17 @@ Item {
     signal saveScript()
     signal newScript()
     signal openScript()
+
     onPlayScript:
     {
         bleManager.write("i");
          mainItem.isPlaying = true
     }
-
+    onStopScript:
+    {
+        bleManager.write ("o");
+        mainItem.isPlaying = false
+    }
     function saveListModelToJson(listModel, filePath) {
         var variantMapList = [];
         for (var i = 0; i < listModel.count; i++) {
@@ -165,14 +170,23 @@ Item {
     }
 
 
-    onStopScript:
-    {
-        mainItem.isPlaying = false
-    }
+
     onRestartScript:
     {
+        bleManager.write ("o");
+        mainItem.isPlaying = false;
+        if (keyframeListView.currentIndex != 0)
+        {
+            keyframeListView.currentIndex = 0;
+        }
+        else
+        {
+            mainWindow.trigger();
+        }
 
-        keyframeListView.currentIndex = 0;
+
+
+
 
     }
     onOpenScript:

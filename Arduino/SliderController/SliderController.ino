@@ -5,6 +5,7 @@
 #include "CircularList.h"
 #include "Keyframe.h"
 int numberOfDim = 3;
+int ENDSTOP_X = 14;
 double charToDouble(uint8_t *charArray)
 {
     double result;
@@ -166,6 +167,7 @@ double DIFF[3];
 
 void setup()
 {
+    pinMode(ENDSTOP_X,INPUT_PULLUP);
     Serial.begin(115200);
     SerialBT.begin("SliderController");
     /* If no name is given, default 'ESP32' is applied */
@@ -253,7 +255,29 @@ long TIME_OUT = 2000;
 long checkIn;
 void loop()
 {    
+    if (digitalRead(ENDSTOP_X)==1)
+    {
+      
+      Serial.println("emergency stop");    
+      instruction = 0;
+      script_start = false;
+      buff.clear();
+      stepper[0].setAcceleration(accelarator*10);
+      stepper[0].stop();
+      stepper[0].runToPosition();
+      stepper[0].setExpectedSpeed(accelarator);
+      while  (digitalRead(ENDSTOP_X) == 1)
+      {
+        stepper[0].runSpeedWithAccel();
+      }
+      stepper[0].setExpectedSpeed(0);
+      stepper[0].stop();
+      stepper[0].runToPosition();
+      stepper[0].setCurrentPosition(0);
+      
 
+      stepper[0].setAcceleration(accelarator);
+    }
     static Keyframe currentKeyframe;
     static int propertyIndex = 0;
     static int index = 0;
@@ -282,6 +306,32 @@ void loop()
         
         switch (instruction)
         {
+          //c homing x
+        case 99:
+        {
+               stepper[0].setAcceleration(accelarator);
+               stepper[0].setExpectedSpeed(-MAX_SPEED/10);
+               while (digitalRead(ENDSTOP_X)==0)
+              {
+                  stepper[0].runSpeedWithAccel();
+              }
+              stepper[0].setAcceleration(accelarator*5);
+              stepper[0].stop();
+              stepper[0].runToPosition();
+              stepper[0].setExpectedSpeed(MAX_SPEED/5);
+              while  (digitalRead(ENDSTOP_X) == 1)
+              {
+                stepper[0].runSpeedWithAccel();
+              }
+              stepper[0].setExpectedSpeed(0);
+              stepper[0].setAcceleration(accelarator*5);
+              stepper[0].stop();
+              stepper[0].runToPosition();
+              stepper[0].setCurrentPosition(0);
+              stepper[0].setAcceleration(accelarator);
+
+              break;
+        }
             // x  position
         case 120:
         {

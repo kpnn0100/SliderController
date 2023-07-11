@@ -91,7 +91,7 @@ Window {
         id: dialog
         title: "Setting"
         height: mainWindow.height/2
-        width:  mainWindow.width/2
+        width:  contentOfDialog.implicitWidth*1.1
         modal: true
         anchors.centerIn: parent
 
@@ -108,6 +108,7 @@ Window {
             {
                 spacing:10
                 anchors.centerIn: parent
+                id: contentOfDialog
                 Rectangle
                 {
                     height: unlockText.contentHeight
@@ -149,6 +150,27 @@ Window {
                         id: lockText
                         anchors.centerIn: parent
                         text: "Lock motors"
+                        font.pointSize: 20
+                        color: whiteColor
+                    }
+                }
+                Rectangle
+                {
+                    height: homingText.contentHeight
+                    width: homingText.contentWidth* 1.2
+                    color: mainColor2
+                    MouseArea
+                    {
+                        anchors.fill: parent
+                        onClicked:
+                        {
+                            bleManager.write("c");
+                        }
+                    }
+                    Text {
+                        id: homingText
+                        anchors.centerIn: parent
+                        text: "Homing Slide"
                         font.pointSize: 20
                         color: whiteColor
                     }

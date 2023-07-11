@@ -31,6 +31,7 @@ Item {
         mainItem.scriptName =  nameSplit[nameSplit.length-1]
         keyframeListView.currentIndex=0
         mainItem.updateView()
+        console.log("Current script path has changed")
     }
 
     signal saveKeyframe()
@@ -48,11 +49,13 @@ Item {
     {
         bleManager.write("i");
          mainItem.isPlaying = true
+        console.log("play script")
     }
     onStopScript:
     {
         bleManager.write ("o");
         mainItem.isPlaying = false
+        console.log("stop script")
     }
     function saveListModelToJson(listModel, filePath) {
         var variantMapList = [];
@@ -76,7 +79,6 @@ Item {
     }
     function updateView()
     {
-
         timeTextInput.text = keyframeList.get(keyframeListView.currentIndex).time;
         positionTextInput.text = keyframeList.get(keyframeListView.currentIndex).position;
         focalTextInput.text = keyframeList.get(keyframeListView.currentIndex).focal;
@@ -265,6 +267,7 @@ Item {
             {
                 keyframeList.append(keyframeList.get(keyframeList.count-1))
             }
+        updateKeyframeList()
     }
 
     ListModel
@@ -848,7 +851,7 @@ Item {
                                         height: parent.height
                                         width: propertyEditRegion.alignSize
                                         Text {
-                                            text: qsTr("Ingoing: ")
+                                            text: qsTr("Incomming: ")
                                             color: whiteColor
                                             font.bold: true
                                             font.pixelSize: globalSpacing*2
